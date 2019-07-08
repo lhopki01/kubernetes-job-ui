@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/gin-gonic/gin v1.4.0 // indirect
+	github.com/gin-gonic/gin v1.4.0
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/jroimartin/gocui v0.4.0
