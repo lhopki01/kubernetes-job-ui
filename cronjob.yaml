@@ -38,5 +38,5 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "Hello, World!"
+            - date; echo "Hello, World!\nSecond Line"
           restartPolicy: OnFailure

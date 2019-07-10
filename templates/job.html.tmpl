@@ -23,45 +23,31 @@
 		</div>
 		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 			<ul class="nav navbar-nav">
-				<li class="active"><a href="/cronjobs">Cronjobs<span class="sr-only">(current)</span></a></li>
-				<li><a href="/status">Status</a></li>
+				<li><a href="/cronjobs">Cronjobs</a></li>
+				<li class="active"><a href="/job">Job<span class="sr-only">(current)</span></a></li>
 				<li><a href="/versions">Versions</a></li>
 			</ul>
 		</div>
 	</div class="container-fluid">
 </nav class="navbar navbar-default">
 
+<span>{{ .query }}</span>
+
 <table class="table table-condensed table-bordered table-striped">
 	<thead>
 		<tr class="success">
-			<th>CronJob</th>
+			<th>Pod</th>
 			<th>Namespace</th>
-			<th>Schedule</th>
-			<th>Previous Runs</th>
-			<th>Manual Run</th>
 		</tr>
 	</thead>
 	<tbody>
-	{{range .cronjobs}}
+	{{range .job.Pods}}
 	<tr>
 		<td>{{ .Name }}</td>
 		<td>{{ .Namespace }}</td>
-		<td>{{ .Schedule }}</td>
-		<td>
-		{{ range .Jobs }}
-		{{ if .Passed }}
-			<a href="/job?name={{ .Name }}">
-				<span class="glyphicon glyphicon-ok-sign icon-success"></span>
-			</a>
-		{{ else }}
-			<a href="/job?name={{ .Name }}">
-				<span class="glyphicon glyphicon-remove-sign icon-fail"></span>
-			</a>
-		{{ end }}
-		{{ end }}
-		</td>
-		<td><a href="/nodes">Run Now</a></td>
 	</tr>
 	{{end}}
 	</tbody>
 </table class="table">
+
+<span>{{ .logs }}</span>
