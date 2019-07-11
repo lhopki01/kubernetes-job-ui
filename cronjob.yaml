@@ -40,5 +40,5 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "Hello, World!"; exit 1
+            - date; echo "Hello, World!"; if [ $RANDOM -gt 5766 ]; then echo "failing"; exit 1; fi
           restartPolicy: Never
