@@ -65,7 +65,7 @@ func Serve(collection k8s.Collection) {
 		c.HTML(http.StatusOK, "job.html.tmpl", gin.H{
 			"job":   collection.Jobs[job],
 			"query": job,
-			"logs":  k8s.GetPodLogs(collection.Client, job),
+			"pods":  k8s.GetPodLogs(collection.Client, job),
 		})
 	})
 	r.GET("/ping", func(c *gin.Context) {

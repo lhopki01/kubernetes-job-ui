@@ -6,7 +6,7 @@ metadata:
   name: one
 spec:
   schedule: "*/5 * * * *"
-  successfulJobsHistoryLimit: 10
+  successfulJobsHistoryLimit: 5
   jobTemplate:
     spec:
       template:
@@ -26,10 +26,12 @@ kind: CronJob
 metadata:
   name: two
 spec:
-  schedule: "*/5 * * * *"
-  successfulJobsHistoryLimit: 10
+  schedule: "*/2 * * * *"
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
   jobTemplate:
     spec:
+      backoffLimit: 1
       template:
         spec:
           containers:
@@ -38,5 +40,5 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "Hello, World!\nSecond Line"
-          restartPolicy: OnFailure
+            - date; echo "Hello, World!"; exit 1
+          restartPolicy: Never

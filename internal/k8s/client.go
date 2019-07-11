@@ -69,6 +69,7 @@ func InitializeStruct() (collection Collection) {
 				if owner.Name == cj.Name {
 					job := Job{
 						Name:         j.Name,
+						Namespace:    j.Namespace,
 						CreationTime: j.CreationTimestamp,
 					}
 					if j.Status.Succeeded > 0 {
@@ -132,30 +133,35 @@ func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	return pods
 }
 
-func GetPodLogs(clientset *kubernetes.Clientset, job string) (logs string) {
+func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	ps, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", job),
 	})
 	if err != nil {
 		println(err)
 	}
-	if len(ps.Items) > 0 {
-		podLogOpts := corev1.PodLogOptions{}
-		req := clientset.CoreV1().Pods(ps.Items[0].Namespace).GetLogs(ps.Items[0].Name, &podLogOpts)
+	podLogOpts := corev1.PodLogOptions{}
+	for _, p := range ps.Items {
+		req := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOpts)
 		podLogs, err := req.Stream()
 		if err != nil {
-			return "error in opening stream"
 		}
 		defer podLogs.Close()
 
 		buf := new(bytes.Buffer)
 		_, err = io.Copy(buf, podLogs)
 		if err != nil {
-			return "error in copy information from podLogs to buf"
 		}
+		//str := strings.ReplaceAll(buf.String(), "\n", "<br>")
 		str := buf.String()
 
-		return str
+		pods = append(pods, Pod{
+			Name:         p.Name,
+			Namespace:    p.Namespace,
+			CreationTime: p.CreationTimestamp,
+			Logs:         str,
+		})
+
 	}
-	return "no logs"
+	return pods
 }

@@ -10,10 +10,12 @@ type Pod struct {
 	Namespace    string
 	CreationTime metav1.Time
 	Passed       string
+	Logs         string
 }
 
 type Job struct {
 	Name         string
+	Namespace    string
 	CreationTime metav1.Time
 	Running      bool
 	Passed       bool

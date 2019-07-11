@@ -31,23 +31,34 @@
 	</div class="container-fluid">
 </nav class="navbar navbar-default">
 
-<span>{{ .query }}</span>
+<span>Job: {{ .job.Name }}</span><br>
+<span>Namespace: {{ .job.Namespace }}</span><br>
+<span>Creation Time: {{ .job.CreationTime }}</span><br>
+<span>Status: {{ .job.Passed }}</span><br>
 
 <table class="table table-condensed table-bordered table-striped">
+	{{range .pods}}
 	<thead>
 		<tr class="success">
 			<th>Pod</th>
 			<th>Namespace</th>
+			<th>Creation Time</th>
 		</tr>
 	</thead>
 	<tbody>
-	{{range .job.Pods}}
-	<tr>
-		<td>{{ .Name }}</td>
-		<td>{{ .Namespace }}</td>
-	</tr>
-	{{end}}
+		<tr>
+			<td>{{ .Name }}</td>
+			<td>{{ .Namespace }}</td>
+			<td>{{ .CreationTime }}
+		</tr>
+		<tr class="success">
+			<th colspan=3>Logs</td>
+		</tr>
+		<tr>
+			<td colspan=3><pre>{{ .Logs }}</pre></td>
+		</tr>
 	</tbody>
+	{{end}}
 </table class="table">
 
-<span>{{ .logs }}</span>
+<p>{{ .logs }}</p>
