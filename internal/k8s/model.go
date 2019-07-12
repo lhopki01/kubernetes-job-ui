@@ -34,3 +34,14 @@ type Collection struct {
 	Jobs     map[string]Job
 	Client   *kubernetes.Clientset
 }
+
+type JobOptions struct {
+	Options []Option
+}
+
+type Option struct {
+	EnvVar      string
+	Options     []string
+	Default     string
+	Description string
+}

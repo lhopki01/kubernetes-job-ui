@@ -68,9 +68,32 @@ func Serve(collection k8s.Collection) {
 			"pods":  k8s.GetPodLogs(collection.Client, job),
 		})
 	})
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
+	jobOptions := k8s.JobOptions{
+		Options: []k8s.Option{
+			k8s.Option{
+				EnvVar: "FOOBAR",
+				Options: []string{
+					"FOO",
+					"BAR",
+					"foobar",
+				},
+				Default:     "foobar",
+				Description: "An option to select what type of foo",
+			},
+			k8s.Option{
+				EnvVar: "BOOLEAN",
+				Options: []string{
+					"true",
+					"false",
+				},
+				Default:     "true",
+				Description: "Should we do something?",
+			},
+		},
+	}
+	r.GET("/createjob", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "createjob.html.tmpl", gin.H{
+			"jobOptions": jobOptions,
 		})
 	})
 	r.Run() // listen and serve on 0.0.0.0:8080

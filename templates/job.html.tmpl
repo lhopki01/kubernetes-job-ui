@@ -8,6 +8,9 @@
 	<link rel="stylesheet" href="static/css/bootstrap.min.css">
 	<link rel="stylesheet" href="static/css/bootstrap-theme.min.css">
 	<link rel="stylesheet" href="static/css/app.css">
+	<link rel="stylesheet" href="static/css/barebones.css">
+	<link rel="stylesheet" href="static/css/normalize.css">
+	<link rel="stylesheet" href="static/css/skeleton-legacy.css">
 </head>
 <body>
 <nav class="navbar navbar-default">
@@ -25,7 +28,7 @@
 			<ul class="nav navbar-nav">
 				<li><a href="/cronjobs">Cronjobs</a></li>
 				<li class="active"><a href="/job">Job<span class="sr-only">(current)</span></a></li>
-				<li><a href="/versions">Versions</a></li>
+				<li><a href="/createjob">Versions</a></li>
 			</ul>
 		</div>
 	</div class="container-fluid">
@@ -36,29 +39,31 @@
 <span>Creation Time: {{ .job.CreationTime }}</span><br>
 <span>Status: {{ .job.Passed }}</span><br>
 
-<table class="table table-condensed table-bordered table-striped">
-	{{range .pods}}
-	<thead>
-		<tr class="success">
-			<th>Pod</th>
-			<th>Namespace</th>
-			<th>Creation Time</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>{{ .Name }}</td>
-			<td>{{ .Namespace }}</td>
-			<td>{{ .CreationTime }}
-		</tr>
-		<tr class="success">
-			<th colspan=3>Logs</td>
-		</tr>
-		<tr>
-			<td colspan=3><pre>{{ .Logs }}</pre></td>
-		</tr>
-	</tbody>
-	{{end}}
-</table class="table">
+<div class="container">
+	<table class="u-full-width">
+		{{range .pods}}
+		<thead>
+			<tr class="success">
+				<th>Pod</th>
+				<th>Namespace</th>
+				<th>Creation Time</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>{{ .Name }}</td>
+				<td>{{ .Namespace }}</td>
+				<td>{{ .CreationTime }}
+			</tr>
+			<tr class="success">
+				<th colspan=3>Logs</td>
+			</tr>
+			<tr>
+				<td colspan=3><pre>{{ .Logs }}</pre></td>
+			</tr>
+		</tbody>
+		{{end}}
+	</table class="table">
+</div>
 
 <p>{{ .logs }}</p>
