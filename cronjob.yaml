@@ -6,6 +6,7 @@ metadata:
   name: one
 spec:
   schedule: "*/5 * * * *"
+  suspend: true
   successfulJobsHistoryLimit: 5
   jobTemplate:
     spec:
@@ -25,6 +26,31 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: two
+  annotations:
+    kubernetes-job-runner.io/config: |
+      {
+        "options": [
+          {
+            "envvar": "FOOBAR",
+            "values": [
+              "FOO",
+              "BAR",
+              "foobar"
+            ],
+            "default": "foobar",
+            "description": "An option to select what type of foo"
+          },
+          {
+            "envvar": "VERY_LONG_BOOLEAN_VALUE",
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": true,
+            "description": "Should we do something?"
+          }
+        ]
+      }
 spec:
   schedule: "*/2 * * * *"
   successfulJobsHistoryLimit: 5
@@ -40,5 +66,8 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "Hello, World!"; if [ $RANDOM -gt 5766 ]; then echo "failing"; exit 1; fi
+            - date; echo "$FOOBAR"; if [ $RANDOM -gt 5766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: FOOBAR
+                value: "FOOBAR not set"
           restartPolicy: Never

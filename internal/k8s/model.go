@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -9,7 +11,7 @@ type Pod struct {
 	Name         string
 	Namespace    string
 	CreationTime metav1.Time
-	Passed       string
+	Phase        corev1.PodPhase
 	Logs         string
 }
 
@@ -22,26 +24,29 @@ type Job struct {
 	Pods         []Pod
 }
 
-type Cronjob struct {
+type CronJob struct {
 	Name      string
 	Namespace string
 	Schedule  string
-	Jobs      []Job
+	Jobs      map[string]Job
+	Config    JobOptions
+	Object    *v1beta1.CronJob
 }
 
 type Collection struct {
-	Cronjobs []Cronjob
+	CronJobs map[string]CronJob
 	Jobs     map[string]Job
 	Client   *kubernetes.Clientset
 }
 
 type JobOptions struct {
-	Options []Option
+	Options []Option `json:"options"`
 }
 
 type Option struct {
-	EnvVar      string
-	Options     []string
-	Default     string
-	Description string
+	EnvVar         string   `json:"envvar"`
+	Values         []string `json:"values"`
+	Default        string   `json:"default"`
+	Description    string   `json:"Description"`
+	ContainerIndex int      `json:"container_index"`
 }

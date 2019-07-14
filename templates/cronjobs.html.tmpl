@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Cronjobs</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link rel="stylesheet" href="css/iconic-bootstrap.css">
+
+</head>
+
+<body>
+
+<div class="container-fluid">
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="#">Platform</a>
+			<div class="collapse navbar-collapse" id="navbarSupportedContent">
+				<ul class="navbar-nav mr-auto">
+					<li class="nav-item">
+						<a class="nav-link" href="/cronjobs">CronJobs<span class="sr-only">(current)</span></a>
+					</li>
+				</ul>
+			</div>
+	</nav>
+
+
+	<table class="table table-condensed table-bordered table-striped">
+		<thead>
+			<tr class="success">
+				<th>CronJob</th>
+				<th>Namespace</th>
+				<th>Schedule</th>
+				<th>Previous Runs</th>
+				<th>Run</th>
+			</tr>
+		</thead>
+		<tbody>
+		{{ range .collection.CronJobs }}
+		{{ $cronJob := . }}
+		<tr>
+			<td>
+				<a href="/cronjob?cronjob={{ .Name }}">{{ .Name }}</a>
+			</td>
+			<td>{{ .Namespace }}</td>
+			<td>{{ .Schedule }}</td>
+			<td>
+			{{ range .Jobs }}
+			{{ if .Passed }}
+				<a href="/job?cronjob={{ $cronJob.Name }}&job={{ .Name }}" data-toggle="tooltip" data-placement="bottom" data-original-title="{{ .CreationTime }}">
+					<svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="green" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+						<path d="M2 20 L12 28 30 4" />
+					</svg>
+				</a>
+			{{ else }}
+				<a href="/job?cronjob={{ $cronJob.Name }}&job={{ .Name }}" data-toggle="tooltip" data-placement="bottom" data-original-title="{{ .CreationTime }}">
+					<svg id="i-close" viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="red" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+						<path d="M2 30 L30 2 M30 30 L2 2" />
+					</svg>
+				</a>
+			{{ end }}
+			{{ end }}
+			</td>
+			<td>
+				<a href="/createjob?cronjob={{ .Name }}">
+					<svg id="i-play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="25" height="25" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="text-centre">
+						<path d="M10 2 L10 30 24 16 Z" />
+					</svg>
+				</a>
+			</td>
+		</tr>
+		{{end}}
+
+		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	<script>
+		$(function () {
+			$('[data-toggle="tooltip"]').tooltip()
+		})
+	</script>
+
+		</tbody>
+	</table class="table">
+</div>
+</body>
