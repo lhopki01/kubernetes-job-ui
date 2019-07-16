@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"sync"
+
 	"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +39,7 @@ type Collection struct {
 	CronJobs map[string]CronJob
 	Jobs     map[string]Job
 	Client   *kubernetes.Clientset
+	Mux      sync.Mutex
 }
 
 type JobOptions struct {

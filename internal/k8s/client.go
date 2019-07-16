@@ -65,6 +65,8 @@ func UpdateCollection(collection *Collection) {
 	_, cjs := GetCronJobs(collection.Client)
 	_, js := GetJobs(collection.Client)
 
+	collection.Mux.Lock()
+	defer collection.Mux.Unlock()
 	collection.CronJobs = make(map[string]CronJob)
 
 	for _, cj := range cjs.Items {
@@ -184,11 +186,11 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 }
 
 func RunJob(
-	c *kubernetes.Clientset,
+	collection *Collection,
 	cronJob *v1beta1.CronJob,
 	envVars map[string]string,
 ) (name string, err error) {
-	job, err := c.BatchV1().Jobs(cronJob.Namespace).Create(createJobFromCronJob(cronJob, envVars))
+	job, err := collection.Client.BatchV1().Jobs(cronJob.Namespace).Create(createJobFromCronJob(cronJob, envVars))
 	return job.Name, err
 }
 

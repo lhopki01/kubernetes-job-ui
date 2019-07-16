@@ -32,6 +32,5 @@ A web ui for triggering manual runs of Kubernetes CronJobs.  Supports a configur
 
 ## Limitations
 
-1. Includes a known race condition.  Future versions will fix this issue.
-2. There are not currently any ways to limit which CronJobs are visible in the ui.
-3. Logs are not streamed to ui.  Page needs to be manually refreshed.
+1. There are not currently any ways to limit which CronJobs are visible in the ui.
+2. Logs are not streamed to ui.  Page needs to be manually refreshed.
