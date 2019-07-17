@@ -3,6 +3,7 @@ package site
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
@@ -70,5 +71,9 @@ func Serve(collection *k8s.Collection) {
 		k8s.UpdateCollection(collection)
 		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/job?cronjob=%s&job=%s", cronJob, jobName))
 	})
-	r.Run() // listen and serve on 0.0.0.0:8080
+	err := r.Run() // listen and serve on 0.0.0.0:8080
+	if err != nil {
+		fmt.Println("failed to start server")
+		os.Exit(1)
+	}
 }

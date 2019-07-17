@@ -44,6 +44,7 @@ type Collection struct {
 
 type JobOptions struct {
 	Options []Option `json:"options"`
+	Error   error
 }
 
 type Option struct {

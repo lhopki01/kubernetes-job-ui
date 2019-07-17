@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/viper"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
@@ -33,7 +34,11 @@ func homeDir() string {
 func NewClient() *kubernetes.Clientset {
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		kubeconfig = flag.String(
+			"kubeconfig",
+			filepath.Join(home, ".kube", "config"),
+			"(optional) absolute path to the kubeconfig file",
+		)
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
@@ -56,13 +61,13 @@ func NewClient() *kubernetes.Clientset {
 func NewCollection() (collection *Collection) {
 	c := NewClient()
 	collection = new(Collection)
-	(*collection).Client = c
+	collection.Client = c
 	UpdateCollection(collection)
 	return collection
 }
 
 func UpdateCollection(collection *Collection) {
-	_, cjs := GetCronJobs(collection.Client)
+	cjs := GetCronJobs(collection.Client)
 	_, js := GetJobs(collection.Client)
 
 	collection.Mux.Lock()
@@ -80,7 +85,16 @@ func UpdateCollection(collection *Collection) {
 		if *cj.Spec.Suspend {
 			cronJob.Schedule = "Disabled"
 		}
-		json.Unmarshal([]byte(cj.Annotations["kubernetes-job-runner.io/config"]), &cronJob.Config)
+
+		if val, ok := cj.Annotations["kubernetes-job-runner.io/config"]; ok {
+			err := json.Unmarshal([]byte(val), &cronJob.Config)
+			if err != nil {
+				cronJob.Config.Error = err
+			}
+		} else if viper.GetBool("configured-only") {
+			continue
+		}
+
 		for _, j := range js.Items {
 			for _, owner := range j.GetOwnerReferences() {
 				if owner.Name == cj.Name {
@@ -101,21 +115,19 @@ func UpdateCollection(collection *Collection) {
 	}
 }
 
-func GetCronJobs(clientset *kubernetes.Clientset) (names []string, cronJobs *v1beta1.CronJobList) {
-	cronJobs, err := clientset.BatchV1beta1().CronJobs("").List(metav1.ListOptions{})
+func GetCronJobs(clientset *kubernetes.Clientset) (cronJobs *v1beta1.CronJobList) {
+	namespace := viper.GetString("namespace")
+	cronJobs, err := clientset.BatchV1beta1().CronJobs(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		println(err)
 	}
 
-	for _, cronJob := range cronJobs.Items {
-		names = append(names, cronJob.Name)
-	}
-
-	return names, cronJobs
+	return cronJobs
 }
 
 func GetJobs(clientset *kubernetes.Clientset) (names []string, jobs *batchv1.JobList) {
-	jobs, err := clientset.BatchV1().Jobs("").List(metav1.ListOptions{})
+	namespace := viper.GetString("namespace")
+	jobs, err := clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		println(err)
 	}
@@ -128,7 +140,9 @@ func GetJobs(clientset *kubernetes.Clientset) (names []string, jobs *batchv1.Job
 }
 
 func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
-	ps, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{
+
+	namespace := viper.GetString("namespace")
+	ps, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", job),
 	})
 	if err != nil {
@@ -148,7 +162,8 @@ func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 }
 
 func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
-	ps, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{
+	namespace := viper.GetString("namespace")
+	ps, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", job),
 	})
 	if err != nil {
@@ -169,12 +184,14 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 			req := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOpts)
 			podLogs, err := req.Stream()
 			if err != nil {
+				fmt.Printf("failed to stream logs with err: %v\n", err)
 			}
 			defer podLogs.Close()
 
 			buf := new(bytes.Buffer)
 			_, err = io.Copy(buf, podLogs)
 			if err != nil {
+				fmt.Printf("failed to copy logs with err: %v\n", err)
 			}
 			//str := strings.ReplaceAll(buf.String(), "\n", "<br>")
 			str := buf.String()
