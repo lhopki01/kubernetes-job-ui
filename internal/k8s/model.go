@@ -23,6 +23,8 @@ type Job struct {
 	CreationTime metav1.Time
 	Running      bool
 	Passed       bool
+	Manual       bool
+	Status       string
 	Pods         []Pod
 }
 

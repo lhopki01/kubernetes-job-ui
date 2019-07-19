@@ -103,10 +103,17 @@ func UpdateCollection(collection *Collection) {
 						Namespace:    j.Namespace,
 						CreationTime: j.CreationTimestamp,
 					}
+					if j.Annotations["cronjob.kubernetes.io/instantiate"] == "manual" {
+						job.Manual = true
+					}
 					if j.Status.Succeeded > 0 {
 						job.Passed = true
+						job.Status = "succeeded"
+					} else if j.Status.Active > 0 {
+						job.Status = "active"
+					} else if j.Status.Failed == *j.Spec.BackoffLimit+int32(1) {
+						job.Status = "failed"
 					}
-					//job.Pods = GetPods(c, j.Name)
 					cronJob.Jobs[j.Name] = job
 				}
 			}

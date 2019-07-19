@@ -18,8 +18,8 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "Hello, World!"
-          restartPolicy: OnFailure
+            - date; echo "Hello, World!"; sleep 30
+          restartPolicy: Never
 ---
 # cronjob.yaml
 apiVersion: batch/v1beta1
