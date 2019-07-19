@@ -245,7 +245,7 @@ func createJobFromCronJob(
 	}
 	spec.Template.Spec.Containers[0].Env = envVarSlice[0]
 
-	name := fmt.Sprintf("%s-m-%v", cronJob.Name, time.Now().Unix())
+	name := fmt.Sprintf("%s-%v-m", cronJob.Name, time.Now().Unix())
 
 	return &batchv1.Job{
 		// this is ok because we know exactly how we want to be serialized
