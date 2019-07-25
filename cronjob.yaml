@@ -15,10 +15,13 @@ spec:
           containers:
           - name: hello
             image: busybox
+            env:
+            - name: FOOBAR
+              value: "foobar"
             args:
             - /bin/sh
             - -c
-            - date; echo "Hello, World!"; sleep 30
+            - date; for i in $(seq 1 1000); do echo "Hello, $FOOBAR $i"; sleep 3; done
           restartPolicy: Never
 ---
 # cronjob.yaml

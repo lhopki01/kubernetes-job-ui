@@ -62,25 +62,23 @@ func NewCollection() (collection *Collection) {
 	c := NewClient()
 	collection = new(Collection)
 	collection.Client = c
-	UpdateCollection(collection)
+	collection.UpdateCollection()
 	return collection
 }
 
-func UpdateCollection(collection *Collection) {
-	cjs := GetCronJobs(collection.Client)
-	_, js := GetJobs(collection.Client)
+func (c *Collection) UpdateCollection() {
+	cjs := getCronJobs(c.Client)
+	_, js := getJobs(c.Client)
 
-	collection.Mux.Lock()
-	defer collection.Mux.Unlock()
-	collection.CronJobs = make(map[string]CronJob)
-
+	var cronJobs []CronJob
 	for _, cj := range cjs.Items {
 		cronJob := CronJob{
-			Name:      cj.Name,
-			Namespace: cj.Namespace,
-			Schedule:  cj.Spec.Schedule,
-			Object:    cj.DeepCopy(),
-			Jobs:      make(map[string]Job),
+			Name:         cj.Name,
+			Namespace:    cj.Namespace,
+			CreationTime: cj.CreationTimestamp,
+			Schedule:     cj.Spec.Schedule,
+			Object:       cj.DeepCopy(),
+			Jobs:         orderedOwnedJobs(js.Items, cj.Name),
 		}
 		if *cj.Spec.Suspend {
 			cronJob.Schedule = "Disabled"
@@ -93,36 +91,110 @@ func UpdateCollection(collection *Collection) {
 			}
 		} else if viper.GetBool("configured-only") {
 			continue
-		}
-
-		for _, j := range js.Items {
-			for _, owner := range j.GetOwnerReferences() {
-				if owner.Name == cj.Name {
-					job := Job{
-						Name:         j.Name,
-						Namespace:    j.Namespace,
-						CreationTime: j.CreationTimestamp,
-					}
-					if j.Annotations["cronjob.kubernetes.io/instantiate"] == "manual" {
-						job.Manual = true
-					}
-					if j.Status.Succeeded > 0 {
-						job.Passed = true
-						job.Status = "succeeded"
-					} else if j.Status.Active > 0 {
-						job.Status = "active"
-					} else if j.Status.Failed == *j.Spec.BackoffLimit+int32(1) {
-						job.Status = "failed"
-					}
-					cronJob.Jobs[j.Name] = job
+		} else {
+			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
+				for _, v := range container.Env {
+					cronJob.Config.Options = append(cronJob.Config.Options, Option{
+						EnvVar:         v.Name,
+						Default:        v.Value,
+						ContainerIndex: i,
+					})
 				}
 			}
 		}
-		collection.CronJobs[cronJob.Name] = cronJob
+		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
 	}
+	c.Lock()
+	c.CronJobs = cronJobs
+	c.Unlock()
 }
 
-func GetCronJobs(clientset *kubernetes.Clientset) (cronJobs *v1beta1.CronJobList) {
+func orderedOwnedJobs(js []batchv1.Job, cronJobName string) []Job {
+	var jobs []Job
+	for _, j := range js {
+		for _, owner := range j.GetOwnerReferences() {
+			if owner.Name == cronJobName {
+				job := Job{
+					Name:         j.Name,
+					Namespace:    j.Namespace,
+					CreationTime: j.CreationTimestamp,
+				}
+				if j.Annotations["cronjob.kubernetes.io/instantiate"] == "manual" {
+					job.Manual = true
+				}
+				if j.Status.Succeeded > 0 {
+					job.Passed = true
+					job.Status = "succeeded"
+				} else if j.Status.Active > 0 {
+					job.Status = "active"
+				} else if j.Status.Failed == *j.Spec.BackoffLimit+int32(1) {
+					job.Status = "failed"
+				}
+				jobs = insertJobIntoSliceByCreationTime(jobs, job)
+			}
+		}
+	}
+	return jobs
+}
+
+func (c *Collection) GetCronJob(cronJobName string) CronJob {
+	c.Lock()
+	defer c.Unlock()
+	for _, cj := range c.CronJobs {
+		if cj.Name == cronJobName {
+			return cj
+		}
+	}
+	return CronJob{}
+}
+
+func (c *Collection) GetJob(cronJobName string, jobName string) Job {
+	cronJob := c.GetCronJob(cronJobName)
+	c.Lock()
+	defer c.Unlock()
+	for _, j := range cronJob.Jobs {
+		if j.Name == jobName {
+			return j
+		}
+	}
+	return Job{}
+}
+
+func insertJobIntoSliceByCreationTime(js []Job, job Job) []Job {
+	var jobs []Job
+	for i, j := range js {
+		if j.CreationTime.Before(&job.CreationTime) {
+			return append(append(jobs, job), js[i:]...)
+		} else {
+			jobs = append(jobs, j)
+		}
+	}
+	jobs = append(jobs, job)
+	return jobs
+}
+
+func insertCronJobIntoSliceByCreationTime(cjs []CronJob, cronJob CronJob) []CronJob {
+	var cronJobs []CronJob
+	for i, cj := range cjs {
+		if cj.CreationTime.Before(&cronJob.CreationTime) {
+			cronJobs = append(append(cronJobs, cronJob), cjs[i:]...)
+			return cronJobs
+		} else {
+			cronJobs = append(cronJobs, cj)
+		}
+	}
+	cronJobs = append(cronJobs, cronJob)
+	return cronJobs
+}
+
+func (c *Collection) GetCronJobs() []CronJob {
+	c.Lock()
+	defer c.Unlock()
+	cronJobs := c.CronJobs
+	return cronJobs
+}
+
+func getCronJobs(clientset *kubernetes.Clientset) (cronJobs *v1beta1.CronJobList) {
 	namespace := viper.GetString("namespace")
 	cronJobs, err := clientset.BatchV1beta1().CronJobs(namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -132,7 +204,7 @@ func GetCronJobs(clientset *kubernetes.Clientset) (cronJobs *v1beta1.CronJobList
 	return cronJobs
 }
 
-func GetJobs(clientset *kubernetes.Clientset) (names []string, jobs *batchv1.JobList) {
+func getJobs(clientset *kubernetes.Clientset) (names []string, jobs *batchv1.JobList) {
 	namespace := viper.GetString("namespace")
 	jobs, err := clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -209,12 +281,11 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	return pods
 }
 
-func RunJob(
-	collection *Collection,
-	cronJob *v1beta1.CronJob,
-	envVars map[string]string,
-) (name string, err error) {
-	job, err := collection.Client.BatchV1().Jobs(cronJob.Namespace).Create(createJobFromCronJob(cronJob, envVars))
+func (c *Collection) RunJob(cronJob *v1beta1.CronJob, envVars map[string]string) (name string, err error) {
+	newJobObject := createJobFromCronJob(cronJob, envVars)
+	job, err := c.Client.BatchV1().Jobs(cronJob.Namespace).Create(
+		newJobObject,
+	)
 	return job.Name, err
 }
 

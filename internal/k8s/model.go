@@ -29,19 +29,19 @@ type Job struct {
 }
 
 type CronJob struct {
-	Name      string
-	Namespace string
-	Schedule  string
-	Jobs      map[string]Job
-	Config    JobOptions
-	Object    *v1beta1.CronJob
+	Name         string
+	Namespace    string
+	CreationTime metav1.Time
+	Schedule     string
+	Jobs         []Job
+	Config       JobOptions
+	Object       *v1beta1.CronJob
 }
 
 type Collection struct {
-	CronJobs map[string]CronJob
-	Jobs     map[string]Job
+	sync.Mutex
+	CronJobs []CronJob
 	Client   *kubernetes.Clientset
-	Mux      sync.Mutex
 }
 
 type JobOptions struct {
