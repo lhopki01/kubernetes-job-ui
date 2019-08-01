@@ -47,7 +47,7 @@ dockers:
     binaries:
     - kubernetes-job-ui
     image_templates:
-    - "lhopki01/myimage:latest"
-    - "lhopki01/myimage:{{ .Tag }}"
+    - "lhopki01/kubernetes-job-ui:latest"
+    - "lhopki01/kubernetes-job-ui:{{ .Tag }}"
     skip_push: false
     dockerfile: Dockerfile
