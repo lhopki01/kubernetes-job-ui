@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -89,9 +90,7 @@ func (c *Collection) UpdateCollection() {
 			if err != nil {
 				cronJob.Config.Error = err
 			}
-		} else if viper.GetBool("configured-only") {
-			continue
-		} else {
+		} else if !viper.GetBool("configured-only") {
 			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
 				for _, v := range container.Env {
 					cronJob.Config.Options = append(cronJob.Config.Options, Option{
@@ -137,6 +136,14 @@ func orderedOwnedJobs(js []batchv1.Job, cronJobName string) []Job {
 	return jobs
 }
 
+func getImageTag(image string) string {
+	s := strings.Split(image, ":")
+	if len(s) == 2 {
+		return s[1]
+	}
+	return "latest"
+}
+
 func (c *Collection) GetCronJob(cronJobName string) CronJob {
 	c.Lock()
 	defer c.Unlock()
@@ -165,9 +172,8 @@ func insertJobIntoSliceByCreationTime(js []Job, job Job) []Job {
 	for i, j := range js {
 		if j.CreationTime.Before(&job.CreationTime) {
 			return append(append(jobs, job), js[i:]...)
-		} else {
-			jobs = append(jobs, j)
 		}
+		jobs = append(jobs, j)
 	}
 	jobs = append(jobs, job)
 	return jobs
@@ -179,9 +185,8 @@ func insertCronJobIntoSliceByCreationTime(cjs []CronJob, cronJob CronJob) []Cron
 		if cj.CreationTime.Before(&cronJob.CreationTime) {
 			cronJobs = append(append(cronJobs, cronJob), cjs[i:]...)
 			return cronJobs
-		} else {
-			cronJobs = append(cronJobs, cj)
 		}
+		cronJobs = append(cronJobs, cj)
 	}
 	cronJobs = append(cronJobs, cronJob)
 	return cronJobs

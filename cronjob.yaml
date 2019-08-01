@@ -21,7 +21,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; for i in $(seq 1 1000); do echo "Hello, $FOOBAR $i"; sleep 3; done
+            - date; for i in $(seq 1 10); do echo "Hello, $FOOBAR $i"; sleep 3; done
           restartPolicy: Never
 ---
 # cronjob.yaml
@@ -51,6 +51,10 @@ metadata:
             ],
             "default": true,
             "description": "Should we do something?"
+          },
+          {
+            "envvar": "FREE_FORM_ENVVAR",
+            "default": "some value"
           }
         ]
       }

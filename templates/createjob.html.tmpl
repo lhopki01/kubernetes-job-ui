@@ -37,8 +37,8 @@
 			{{ .EnvVar }}
 			</label>
 			<div class="col">
-			{{ $length := len .Values }} {{ if eq $length 0 }}
-				<input class="form-control" type="test" placeholder="{{ .Default }}" value="{{ .Default }}">
+			{{ if not .Values }}
+				<input class="form-control" type="test" placeholder="{{ .Default }}" value="{{ .Default }}" name="{{ .EnvVar }}">
 			{{ else }}
 			{{ $selected := .Default }}
 				<select class="form-control" id="{{ .EnvVar }}" name="{{ .EnvVar }}">

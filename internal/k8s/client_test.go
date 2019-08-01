@@ -34,31 +34,31 @@ func TestInsertJobIntoSliceByCreationTime(t *testing.T) {
 		expectedSlice []Job
 	}
 	testCases := []testCase{
-		testCase{
+		{
 			tName:         "empty slice",
 			job:           a,
 			slice:         []Job{},
 			expectedSlice: []Job{a},
 		},
-		testCase{
+		{
 			tName:         "add to beginning",
 			job:           a,
 			slice:         []Job{b, c},
 			expectedSlice: []Job{a, b, c},
 		},
-		testCase{
+		{
 			tName:         "add to middle",
 			job:           b,
 			slice:         []Job{a, c},
 			expectedSlice: []Job{a, b, c},
 		},
-		testCase{
+		{
 			tName:         "add to end",
 			job:           c,
 			slice:         []Job{a, b},
 			expectedSlice: []Job{a, b, c},
 		},
-		testCase{
+		{
 			tName:         "equal to existing",
 			job:           b,
 			slice:         []Job{a, b, c},
@@ -101,31 +101,31 @@ func TestInsertCronCronJobIntoSliceByCreationTime(t *testing.T) {
 		expectedSlice []CronJob
 	}
 	testCases := []testCase{
-		testCase{
+		{
 			tName:         "empty slice",
 			job:           a,
 			slice:         []CronJob{},
 			expectedSlice: []CronJob{a},
 		},
-		testCase{
+		{
 			tName:         "add to beginning",
 			job:           a,
 			slice:         []CronJob{b, c},
 			expectedSlice: []CronJob{a, b, c},
 		},
-		testCase{
+		{
 			tName:         "add to middle",
 			job:           b,
 			slice:         []CronJob{a, c},
 			expectedSlice: []CronJob{a, b, c},
 		},
-		testCase{
+		{
 			tName:         "add to end",
 			job:           c,
 			slice:         []CronJob{a, b},
 			expectedSlice: []CronJob{a, b, c},
 		},
-		testCase{
+		{
 			tName:         "equal to existing",
 			job:           b,
 			slice:         []CronJob{a, b, c},

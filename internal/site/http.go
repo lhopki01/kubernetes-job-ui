@@ -52,7 +52,6 @@ func Serve(collection *k8s.Collection) {
 		cronJob := collection.GetCronJob(cronJobName)
 
 		envVars := map[string]string{}
-		spew.Dump(c.PostForm())
 		for _, option := range cronJob.Config.Options {
 			envVars[option.EnvVar] = c.PostForm(option.EnvVar)
 		}

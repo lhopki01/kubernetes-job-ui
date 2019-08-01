@@ -32,6 +32,7 @@ type CronJob struct {
 	Name         string
 	Namespace    string
 	CreationTime metav1.Time
+	Version      string
 	Schedule     string
 	Jobs         []Job
 	Config       JobOptions
