@@ -30,7 +30,19 @@
 			</div>
 	</nav>
 
+	{{ if .jobOptions.Error }}
+	<div class="jumbotron">
+		<span>Parsing job options failed with err:</span><br><br>
+		<span>{{ .jobOptions.Error }}
+	</div>
+	<div class="jumbotron">
+		<pre>
+		<span>{{ .jobOptions.Raw }}</span>
+		</pre>
+	</div>
+	{{ else }}
 	<form action="/createjob?cronjob={{ .cronJob }}" method="post">
+
 		{{ range .jobOptions.Options }}
 		<div class="form-group row">
 			<label for="{{ .EnvVar }}" class="col col-form-label text-right">
@@ -61,6 +73,7 @@
 			<div class="col"></div>
 		</div>
 	</form>
+	{{ end }}
 
 	<script src="/static/js/jquery-3.3.1.slim.min.js"></script>
 	<script src="/static/js/popper.min.js"></script>

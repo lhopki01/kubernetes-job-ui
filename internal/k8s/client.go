@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	// Load all auth plugins
@@ -33,6 +34,22 @@ func homeDir() string {
 }
 
 func NewClient() *kubernetes.Clientset {
+	// check if in cluster first
+	_, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err == nil {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
+		// creates the clientset
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			panic(err.Error())
+		}
+		return clientset
+	}
+
+	// if not in cluster then load from config
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String(
@@ -87,9 +104,16 @@ func (c *Collection) UpdateCollection() {
 
 		if val, ok := cj.Annotations["kubernetes-job-runner.io/config"]; ok {
 			err := json.Unmarshal([]byte(val), &cronJob.Config)
-			if err != nil {
-				cronJob.Config.Error = err
+			if jsonError, ok := err.(*json.SyntaxError); ok {
+				line, character, _ := lineAndCharacter(val, int(jsonError.Offset))
+				cronJob.Config.Error = fmt.Sprintf("Cannot parse JSON schema due to a syntax error at line %d, character %d: %v\n", line, character, jsonError.Error())
+			} else if jsonError, ok := err.(*json.UnmarshalTypeError); ok {
+				line, character, _ := lineAndCharacter(val, int(jsonError.Offset))
+				cronJob.Config.Error = fmt.Sprintf("The JSON type '%v' cannot be converted into the Go '%v' type on struct '%s', field '%v'. See input file line %d, character %d\n", jsonError.Value, jsonError.Type.Name(), jsonError.Struct, jsonError.Field, line, character)
+			} else if err != nil {
+				cronJob.Config.Error = err.Error()
 			}
+			cronJob.Config.Raw = val
 		} else if !viper.GetBool("configured-only") {
 			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
 				for _, v := range container.Env {
@@ -106,6 +130,30 @@ func (c *Collection) UpdateCollection() {
 	c.Lock()
 	c.CronJobs = cronJobs
 	c.Unlock()
+}
+
+func lineAndCharacter(input string, offset int) (line int, character int, err error) {
+	lf := rune(0x0A)
+
+	if offset > len(input) || offset < 0 {
+		return 0, 0, fmt.Errorf("Couldn't find offset %d within the input.", offset)
+	}
+
+	// Humans tend to count from 1.
+	line = 1
+
+	for i, b := range input {
+		if b == lf {
+			line++
+			character = 0
+		}
+		character++
+		if i == offset {
+			break
+		}
+	}
+
+	return line, character, nil
 }
 
 func orderedOwnedJobs(js []batchv1.Job, cronJobName string) []Job {

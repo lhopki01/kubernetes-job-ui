@@ -35,6 +35,7 @@ metadata:
         "options": [
           {
             "envvar": "FOOBAR",
+            "type": "list",
             "values": [
               "FOO",
               "BAR",
@@ -45,16 +46,15 @@ metadata:
           },
           {
             "envvar": "VERY_LONG_BOOLEAN_VALUE",
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": true,
+            "type": "boolean",
+            "default": "true",
             "description": "Should we do something?"
           },
           {
-            "envvar": "FREE_FORM_ENVVAR",
-            "default": "some value"
+            "envvar": "HELM_CHART",
+            "default": "some value",
+            "type": "string",
+            "descriptions": "Helm chart to deploy"
           }
         ]
       }

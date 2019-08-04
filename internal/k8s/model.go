@@ -32,7 +32,6 @@ type CronJob struct {
 	Name         string
 	Namespace    string
 	CreationTime metav1.Time
-	Version      string
 	Schedule     string
 	Jobs         []Job
 	Config       JobOptions
@@ -47,11 +46,20 @@ type Collection struct {
 
 type JobOptions struct {
 	Options []Option `json:"options"`
-	Error   error
+	Error   string
+	Raw     string
 }
+
+const (
+	List   = "list"
+	Bool   = "boolean"
+	String = "string"
+	Int    = "int"
+)
 
 type Option struct {
 	EnvVar         string   `json:"envvar"`
+	Type           string   `json:"type"`
 	Values         []string `json:"values"`
 	Default        string   `json:"default"`
 	Description    string   `json:"Description"`
