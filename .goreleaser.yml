@@ -28,18 +28,16 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
-brew:
-  github:
-    owner: lhopki01
-    name: kubernetes-job-ui
-  commit_author:
-    name: lhopki01
-    email: lhopki01@gmail.com
-  dependencies:
-    - git
-    - hub
-  install: |
-    bin.install "kubernetes-job-ui"
+brews:
+  - github:
+      owner: lhopki01
+      name: brew
+    commit_author:
+      name: lhopki01
+      email: lhopki01@gmail.com
+    folder: Formula
+    install: |
+      bin.install "kubernetes-job-ui"
 dockers:
   -
     goos: linux
