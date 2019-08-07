@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -114,17 +115,27 @@ func (c *Collection) UpdateCollection() {
 				cronJob.Config.Error = err.Error()
 			}
 			cronJob.Config.Raw = val
+			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
+				for j, option := range cronJob.Config.Options {
+					if option.Container == container.Name {
+						cronJob.Config.Options[j].ContainerIndex = i
+					}
+				}
+			}
 		} else if !viper.GetBool("configured-only") {
 			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
 				for _, v := range container.Env {
 					cronJob.Config.Options = append(cronJob.Config.Options, Option{
 						EnvVar:         v.Name,
 						Default:        v.Value,
+						Type:           "string",
+						Container:      container.Name,
 						ContainerIndex: i,
 					})
 				}
 			}
 		}
+		sort.Sort(ByContainerIndex(cronJob.Config.Options))
 		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
 	}
 	c.Lock()
@@ -136,7 +147,7 @@ func lineAndCharacter(input string, offset int) (line int, character int, err er
 	lf := rune(0x0A)
 
 	if offset > len(input) || offset < 0 {
-		return 0, 0, fmt.Errorf("Couldn't find offset %d within the input.", offset)
+		return 0, 0, fmt.Errorf("couldn't find offset %d within the input.", offset)
 	}
 
 	// Humans tend to count from 1.
@@ -301,7 +312,6 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	if err != nil {
 		println(err)
 	}
-	podLogOpts := corev1.PodLogOptions{}
 	for _, p := range ps.Items {
 		pod := Pod{
 			Name:         p.Name,
@@ -309,65 +319,78 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 			CreationTime: p.CreationTimestamp,
 			Phase:        p.Status.Phase,
 		}
-		if p.Status.Phase == "Pending" {
-			pod.Logs = "Pod not running yet"
+		for _, c := range p.Spec.Containers {
+			if p.Status.Phase == "Pending" {
+				pod.Containers = append(pod.Containers, Container{
+					Name: c.Name,
+					Logs: "Pod not running yet",
+				})
+			} else {
+				podLogOpts := corev1.PodLogOptions{
+					Container: c.Name,
+				}
+				req := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOpts)
+				podLogs, err := req.Stream()
+				if err != nil {
+					fmt.Printf("failed to stream logs with err: %v\n", err)
+				}
+				defer podLogs.Close()
 
-		} else {
-			req := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOpts)
-			podLogs, err := req.Stream()
-			if err != nil {
-				fmt.Printf("failed to stream logs with err: %v\n", err)
+				buf := new(bytes.Buffer)
+				_, err = io.Copy(buf, podLogs)
+				if err != nil {
+					fmt.Printf("failed to copy logs with err: %v\n", err)
+				}
+				//str := strings.ReplaceAll(buf.String(), "\n", "<br>")
+				str := buf.String()
+				pod.Containers = append(pod.Containers, Container{
+					Name: c.Name,
+					Logs: str,
+				})
 			}
-			defer podLogs.Close()
-
-			buf := new(bytes.Buffer)
-			_, err = io.Copy(buf, podLogs)
-			if err != nil {
-				fmt.Printf("failed to copy logs with err: %v\n", err)
-			}
-			//str := strings.ReplaceAll(buf.String(), "\n", "<br>")
-			str := buf.String()
-			pod.Logs = str
 		}
 		pods = append(pods, pod)
 	}
 	return pods
 }
 
-func (c *Collection) RunJob(cronJob *v1beta1.CronJob, envVars map[string]string) (name string, err error) {
-	newJobObject := createJobFromCronJob(cronJob, envVars)
+func (c *Collection) RunJob(cronJobName string, envVars []string) (name string, err error) {
+	newJobObject := c.createJobFromCronJob(cronJobName, envVars)
+	cronJob := c.GetCronJob(cronJobName)
 	job, err := c.Client.BatchV1().Jobs(cronJob.Namespace).Create(
 		newJobObject,
 	)
 	return job.Name, err
 }
 
-func createJobFromCronJob(
-	cronJob *v1beta1.CronJob,
-	envVars map[string]string,
-) *batchv1.Job {
+func (c *Collection) createJobFromCronJob(cronJobName string, envVars []string) *batchv1.Job {
+	cronJob := c.GetCronJob(cronJobName)
 	annotations := make(map[string]string)
 	annotations["cronjob.kubernetes.io/instantiate"] = "manual"
-	for k, v := range cronJob.Spec.JobTemplate.Annotations {
+	for k, v := range cronJob.Object.Spec.JobTemplate.Annotations {
 		annotations[k] = v
 	}
 
-	spec := cronJob.Spec.JobTemplate.Spec
+	spec := cronJob.Object.Spec.JobTemplate.Spec
 	envVarSlice := make([][]corev1.EnvVar, len(spec.Template.Spec.Containers))
-	for k, v := range envVars {
-		envVarSlice[0] = append(envVarSlice[0], corev1.EnvVar{
-			Name:  k,
-			Value: v,
-		})
+	for i, v := range envVars {
+		option := cronJob.Config.Options[i]
+		envVarSlice[option.ContainerIndex] = append(
+			envVarSlice[option.ContainerIndex],
+			corev1.EnvVar{
+				Name:  option.EnvVar,
+				Value: v,
+			})
 	}
 
-	for _, v := range spec.Template.Spec.Containers[0].Env {
-		if _, ok := envVars[v.Name]; ok {
-			continue
+	for i, c := range spec.Template.Spec.Containers {
+		for _, v := range c.Env {
+			if !envVarInSlice(v, envVarSlice[i]) {
+				envVarSlice[i] = append(envVarSlice[i], v)
+			}
 		}
-		envVarSlice[0] = append(envVarSlice[0], v)
+		spec.Template.Spec.Containers[i].Env = envVarSlice[i]
 	}
-	spec.Template.Spec.Containers[0].Env = envVarSlice[0]
 
 	name := fmt.Sprintf("%s-%v-m", cronJob.Name, time.Now().Unix())
 
@@ -377,11 +400,20 @@ func createJobFromCronJob(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Annotations: annotations,
-			Labels:      cronJob.Spec.JobTemplate.Labels,
+			Labels:      cronJob.Object.Spec.JobTemplate.Labels,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cronJob, appsv1.SchemeGroupVersion.WithKind("CronJob")),
+				*metav1.NewControllerRef(cronJob.Object, appsv1.SchemeGroupVersion.WithKind("CronJob")),
 			},
 		},
-		Spec: cronJob.Spec.JobTemplate.Spec,
+		Spec: cronJob.Object.Spec.JobTemplate.Spec,
 	}
+}
+
+func envVarInSlice(envVar corev1.EnvVar, slice []corev1.EnvVar) bool {
+	for _, v := range slice {
+		if v.Name == envVar.Name {
+			return true
+		}
+	}
+	return false
 }

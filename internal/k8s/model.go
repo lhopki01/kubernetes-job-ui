@@ -14,7 +14,12 @@ type Pod struct {
 	Namespace    string
 	CreationTime metav1.Time
 	Phase        corev1.PodPhase
-	Logs         string
+	Containers   []Container
+}
+
+type Container struct {
+	Name string
+	Logs string
 }
 
 type Job struct {
@@ -45,16 +50,15 @@ type Collection struct {
 }
 
 type JobOptions struct {
-	Options []Option `json:"options"`
-	Error   string
-	Raw     string
+	Description string   `json:"description"`
+	Options     []Option `json:"options"`
+	Error       string   `json:"error"`
+	Raw         string   `json:"raw"`
 }
 
 const (
 	List   = "list"
-	Bool   = "boolean"
 	String = "string"
-	Int    = "int"
 )
 
 type Option struct {
@@ -63,5 +67,12 @@ type Option struct {
 	Values         []string `json:"values"`
 	Default        string   `json:"default"`
 	Description    string   `json:"Description"`
-	ContainerIndex int      `json:"container_index"`
+	Container      string   `json:"container"`
+	ContainerIndex int
 }
+
+type ByContainerIndex []Option
+
+func (a ByContainerIndex) Len() int           { return len(a) }
+func (a ByContainerIndex) Less(i, j int) bool { return a[i].ContainerIndex < a[j].ContainerIndex }
+func (a ByContainerIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

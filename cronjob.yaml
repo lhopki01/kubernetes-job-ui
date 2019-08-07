@@ -32,7 +32,15 @@ metadata:
   annotations:
     kubernetes-job-runner.io/config: |
       {
+        "description": "A job to deploy the current k8s-manifests configuration of the specified helm chart",
         "options": [
+          {
+            "envvar": "BARFOO",
+            "default": "some value",
+            "type": "string",
+            "descriptions": "Helm chart to deploy",
+            "container": "goodbye"
+          },
           {
             "envvar": "FOOBAR",
             "type": "list",
@@ -42,19 +50,19 @@ metadata:
               "foobar"
             ],
             "default": "foobar",
-            "description": "An option to select what type of foo"
+            "description": "An option to select what type of foo",
+            "container": "hello"
           },
           {
             "envvar": "VERY_LONG_BOOLEAN_VALUE",
-            "type": "boolean",
+            "type": "list",
+            "values": [
+              "true",
+              "false"
+            ],
             "default": "true",
-            "description": "Should we do something?"
-          },
-          {
-            "envvar": "HELM_CHART",
-            "default": "some value",
-            "type": "string",
-            "descriptions": "Helm chart to deploy"
+            "description": "Should we do something?",
+            "container": "hello"
           }
         ]
       }
@@ -77,4 +85,13 @@ spec:
             env:
               - name: FOOBAR
                 value: "FOOBAR not set"
+          - name: goodbye
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "$BARFOO"; if [ $RANDOM -gt 5766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: BARFOO
+                value: "BARFOO not set"
           restartPolicy: Never

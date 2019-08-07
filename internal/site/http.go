@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
@@ -44,19 +45,21 @@ func Serve(collection *k8s.Collection) {
 
 		c.HTML(http.StatusOK, "createjob.html.tmpl", gin.H{
 			"jobOptions": cronJob.Config,
-			"cronJob":    cronJob.Name,
+			"cronJob":    cronJob,
 		})
 	})
 	r.POST("/createjob", func(c *gin.Context) {
 		cronJobName := c.Query("cronjob")
 		cronJob := collection.GetCronJob(cronJobName)
 
-		envVars := map[string]string{}
-		for _, option := range cronJob.Config.Options {
-			envVars[option.EnvVar] = c.PostForm(option.EnvVar)
+		envVars := make([]string, len(cronJob.Config.Options))
+		i := 0
+		for i < len(cronJob.Config.Options) {
+			envVars[i] = c.PostForm(strconv.Itoa(i))
+			i++
 		}
 		spew.Dump(envVars)
-		jobName, err := collection.RunJob(cronJob.Object, envVars)
+		jobName, err := collection.RunJob(cronJob.Name, envVars)
 		if err != nil {
 			panic(err)
 		}

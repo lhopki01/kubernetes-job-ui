@@ -91,12 +91,14 @@
 				<td>{{ .CreationTime }}
 				<td>{{ .Phase }}</td>
 			</tr>
+			{{ range .Containers }}
 			<tr class="success">
-				<th colspan=4>Logs</td>
+				<th colspan=4>{{ .Name }} logs</td>
 			</tr>
 			<tr>
 				<td colspan=4><pre>{{ .Logs }}</pre></td>
 			</tr>
+			{{ end }}
 		</tbody>
 		{{end}}
 	</table class="table">

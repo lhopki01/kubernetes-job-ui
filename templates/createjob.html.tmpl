@@ -41,27 +41,44 @@
 		</pre>
 	</div>
 	{{ else }}
-	<form action="/createjob?cronjob={{ .cronJob }}" method="post">
+	<div class="jumbotron">
+		<h3>{{ .cronJob.Name }}</h3><br>
+		<span>{{ .cronJob.Config.Description }}</span>
+	</div>
+	{{ $container := "" }}
+	<form action="/createjob?cronjob={{ .cronJob.Name }}" method="post">
 
-		{{ range .jobOptions.Options }}
+		{{ range $i, $v := .jobOptions.Options }}
+		{{ if not (eq $v.Container $container) }}
+		<div class="container">
+			<div class="row">
+				<div class="col"></div>
+				<div class="col-6 col-form-label text-left">
+					<h4>Container: {{ $v.Container }}</h4>
+					{{ $container = $v.Container }}
+				</div>
+				<div class="col"></div>
+			</div>
+		</div>
+		{{ end }}
 		<div class="form-group row">
-			<label for="{{ .EnvVar }}" class="col col-form-label text-right">
-			{{ .EnvVar }}
+			<label for="{{ $v.EnvVar }}" class="col col-form-label text-right">
+			{{ $v.EnvVar }}
 			</label>
 			<div class="col">
-			{{ if not .Values }}
-				<input class="form-control" type="test" placeholder="{{ .Default }}" value="{{ .Default }}" name="{{ .EnvVar }}">
-			{{ else }}
-			{{ $selected := .Default }}
-				<select class="form-control" id="{{ .EnvVar }}" name="{{ .EnvVar }}">
-				{{ range .Values }}
+			{{ if eq $v.Type "string" }}
+				<input class="form-control" type="test" placeholder="{{ $v.Default }}" value="{{ $v.Default }}" name="{{ $i }}">
+			{{ else if eq $v.Type "list"}}
+			{{ $selected := $v.Default }}
+				<select class="form-control" id="{{ $v.EnvVar }}" name="{{ $i }}">
+				{{ range $v.Values }}
 					<option value="{{ . }}"{{ if eq . $selected }} selected{{ end }}>{{ . }}</option>
 				{{ end }}
 				</select>
 			{{ end }}
 			</div>
 			<div class = "col col-form-label">
-				<span>{{ .Description }}</span><br>
+				<span>{{ $v.Description }}</span><br>
 			</div>
 		</div>
 		{{ end }}

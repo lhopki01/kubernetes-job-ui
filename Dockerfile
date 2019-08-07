@@ -1,5 +1,9 @@
 FROM alpine:3.10
 
-ADD kubernetes-job-ui /usr/local/bin
+RUN mkdir /app
 
-CMD ["kubernetes-job-ui", "serve"]
+ADD kubernetes-job-ui /app
+ADD templates /app/templates
+ADD static /app/static
+
+CMD ["/app/kubernetes-job-ui", "serve"]
