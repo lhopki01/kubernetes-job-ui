@@ -7,16 +7,36 @@ import (
 	"strconv"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/lhopki01/kubernetes-job-ui/internal/k8s"
 )
 
 func Serve(collection *k8s.Collection) {
 	r := gin.Default()
+	r.Use(cors.Default())
 
 	r.Static("/static", "./static")
 
 	r.LoadHTMLGlob("templates/*.tmpl")
+
+	r.GET("api/v1/cronjobs", func(c *gin.Context) {
+		c.JSON(200, collection.GetCronJobs())
+	})
+	r.GET("api/v1/cronjobs/:cronJobName", func(c *gin.Context) {
+		cronJobName := c.Param("cronJobName")
+		c.JSON(200, collection.GetCronJob(cronJobName))
+	})
+	r.GET("api/v1/cronjobs/:cronJobName/jobs", func(c *gin.Context) {
+		cronJobName := c.Param("cronJobName")
+		c.JSON(200, collection.GetCronJob(cronJobName).Jobs)
+	})
+	r.GET("api/v1/cronjobs/:cronJobName/jobs/:jobName", func(c *gin.Context) {
+		cronJobName := c.Param("cronJobName")
+		jobName := c.Param("jobName")
+		c.JSON(200, collection.GetJob(cronJobName, jobName))
+	})
+
 	r.GET("/cronjobs", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "cronjobs.html.tmpl", gin.H{
 			"cronJobs": collection.GetCronJobs(),

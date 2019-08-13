@@ -4,12 +4,14 @@ go 1.12
 
 require (
 	github.com/davecgh/go-spew v1.1.1
+	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/jroimartin/gocui v0.4.0
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190624072549-eeb6cd0a1762 // indirect
+	github.com/rs/cors v1.7.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect

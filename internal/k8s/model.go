@@ -40,7 +40,7 @@ type CronJob struct {
 	Schedule     string
 	Jobs         []Job
 	Config       JobOptions
-	Object       *v1beta1.CronJob
+	Object       *v1beta1.CronJob `json:"-"`
 }
 
 type Collection struct {

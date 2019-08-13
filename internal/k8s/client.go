@@ -97,7 +97,7 @@ func (c *Collection) UpdateCollection() {
 			CreationTime: cj.CreationTimestamp,
 			Schedule:     cj.Spec.Schedule,
 			Object:       cj.DeepCopy(),
-			Jobs:         orderedOwnedJobs(js.Items, cj.Name),
+			Jobs:         orderedOwnedJobs(js.Items, cj.Name, cj.Namespace),
 		}
 		if *cj.Spec.Suspend {
 			cronJob.Schedule = "Disabled"
@@ -167,11 +167,11 @@ func lineAndCharacter(input string, offset int) (line int, character int, err er
 	return line, character, nil
 }
 
-func orderedOwnedJobs(js []batchv1.Job, cronJobName string) []Job {
+func orderedOwnedJobs(js []batchv1.Job, cronJobName string, cronJobNamespace string) []Job {
 	var jobs []Job
 	for _, j := range js {
 		for _, owner := range j.GetOwnerReferences() {
-			if owner.Name == cronJobName {
+			if owner.Name == cronJobName && j.Namespace == cronJobNamespace {
 				job := Job{
 					Name:         j.Name,
 					Namespace:    j.Namespace,
@@ -185,7 +185,7 @@ func orderedOwnedJobs(js []batchv1.Job, cronJobName string) []Job {
 					job.Status = "succeeded"
 				} else if j.Status.Active > 0 {
 					job.Status = "active"
-				} else if j.Status.Failed == *j.Spec.BackoffLimit+int32(1) {
+				} else if j.Status.Failed >= *j.Spec.BackoffLimit+int32(1) {
 					job.Status = "failed"
 				}
 				jobs = insertJobIntoSliceByCreationTime(jobs, job)
