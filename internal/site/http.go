@@ -23,19 +23,23 @@ func Serve(collection *k8s.Collection) {
 	r.GET("api/v1/cronjobs", func(c *gin.Context) {
 		c.JSON(200, collection.GetCronJobs())
 	})
-	r.GET("api/v1/cronjobs/:cronJobName", func(c *gin.Context) {
-		cronJobName := c.Param("cronJobName")
-		c.JSON(200, collection.GetCronJob(cronJobName))
+	r.GET("api/v1/namespaces/:namespace/jobs/:jobname", func(c *gin.Context) {
+		jobName := c.Param("jobname")
+		c.JSON(200, collection.GetPodLogs(jobName))
 	})
-	r.GET("api/v1/cronjobs/:cronJobName/jobs", func(c *gin.Context) {
-		cronJobName := c.Param("cronJobName")
-		c.JSON(200, collection.GetCronJob(cronJobName).Jobs)
-	})
-	r.GET("api/v1/cronjobs/:cronJobName/jobs/:jobName", func(c *gin.Context) {
-		cronJobName := c.Param("cronJobName")
-		jobName := c.Param("jobName")
-		c.JSON(200, collection.GetJob(cronJobName, jobName))
-	})
+	//r.GET("api/v1/cronjobs/:cronJobName", func(c *gin.Context) {
+	//	cronJobName := c.Param("cronJobName")
+	//	c.JSON(200, collection.GetCronJob(cronJobName))
+	//})
+	//r.GET("api/v1/cronjobs/:cronJobName/jobs", func(c *gin.Context) {
+	//	cronJobName := c.Param("cronJobName")
+	//	c.JSON(200, collection.GetCronJob(cronJobName).Jobs)
+	//})
+	//r.GET("api/v1/cronjobs/:cronJobName/jobs/:jobName", func(c *gin.Context) {
+	//	cronJobName := c.Param("cronJobName")
+	//	jobName := c.Param("jobName")
+	//	c.JSON(200, collection.GetJob(cronJobName, jobName))
+	//})
 
 	r.GET("/cronjobs", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "cronjobs.html.tmpl", gin.H{
@@ -56,7 +60,7 @@ func Serve(collection *k8s.Collection) {
 		c.HTML(http.StatusOK, "job.html.tmpl", gin.H{
 			"cronJob": collection.GetCronJob(cronJobName),
 			"job":     job,
-			"pods":    k8s.GetPodLogs(collection.Client, jobName),
+			"pods":    collection.GetPodLogs(jobName),
 		})
 	})
 	r.GET("/createjob", func(c *gin.Context) {

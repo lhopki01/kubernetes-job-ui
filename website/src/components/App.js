@@ -42,7 +42,7 @@ class App extends React.Component {
                     <Route exact path="/" render={() => <CronJobs cronJobs={this.state.cronJobs}/>}></Route>
                     <Route path="/cronjobs" render={() => <CronJobs cronJobs={this.state.cronJobs}/>}></Route>
                     <Route
-                        path="/cronjob/:cronJobName"
+                        exact path="/namespaces/:namespace/cronjobs/:cronJobName"
                         render={
                             props => <CronJob
                                 {...props}
@@ -50,7 +50,7 @@ class App extends React.Component {
                                 //cronJobName={props.match.params.cronJobName}
                             />}>
                     </Route>
-                    <Route path="/job/:jobId" component={Job}></Route>
+                    <Route path="/namespaces/:namespace/cronjobs/:cronJobName/jobs/:jobName" component={Job}></Route>
                 </Router>
             );
         }

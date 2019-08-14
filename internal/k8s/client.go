@@ -304,9 +304,9 @@ func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	return pods
 }
 
-func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
+func (c *Collection) GetPodLogs(job string) (pods []Pod) {
 	namespace := viper.GetString("namespace")
-	ps, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+	ps, err := c.Client.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", job),
 	})
 	if err != nil {
@@ -319,17 +319,17 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 			CreationTime: p.CreationTimestamp,
 			Phase:        p.Status.Phase,
 		}
-		for _, c := range p.Spec.Containers {
+		for _, container := range p.Spec.Containers {
 			if p.Status.Phase == "Pending" {
 				pod.Containers = append(pod.Containers, Container{
-					Name: c.Name,
+					Name: container.Name,
 					Logs: "Pod not running yet",
 				})
 			} else {
 				podLogOpts := corev1.PodLogOptions{
-					Container: c.Name,
+					Container: container.Name,
 				}
-				req := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOpts)
+				req := c.Client.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOpts)
 				podLogs, err := req.Stream()
 				if err != nil {
 					fmt.Printf("failed to stream logs with err: %v\n", err)
@@ -344,7 +344,7 @@ func GetPodLogs(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 				//str := strings.ReplaceAll(buf.String(), "\n", "<br>")
 				str := buf.String()
 				pod.Containers = append(pod.Containers, Container{
-					Name: c.Name,
+					Name: container.Name,
 					Logs: str,
 				})
 			}
