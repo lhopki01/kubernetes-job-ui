@@ -40,7 +40,7 @@ type CronJob struct {
 	Schedule     string
 	Jobs         []Job
 	Config       JobOptions
-	Object       *v1beta1.CronJob `json:"-"`
+	Object       *v1beta1.CronJob
 }
 
 type Collection struct {
@@ -50,10 +50,10 @@ type Collection struct {
 }
 
 type JobOptions struct {
-	Description string   `json:"description"`
-	Options     []Option `json:"options"`
-	Error       string   `json:"error"`
-	Raw         string   `json:"raw"`
+	Description string
+	Options     []Option
+	Error       string
+	Raw         string
 }
 
 const (
@@ -62,13 +62,30 @@ const (
 )
 
 type Option struct {
-	EnvVar         string   `json:"envvar"`
-	Type           string   `json:"type"`
-	Values         []string `json:"values"`
-	Default        string   `json:"default"`
-	Description    string   `json:"Description"`
-	Container      string   `json:"container"`
+	EnvVar         string
+	Type           string
+	Values         []string
+	Default        string
+	Description    string
+	Container      string
 	ContainerIndex int
+}
+
+type ResponseOption struct {
+	EnvVar    string
+	Container string
+	Value     string
+}
+
+type ValidationError struct {
+	EnvVar      string
+	Container   string
+	OptionIndex int
+	Error       string
+}
+
+type CreateResponse struct {
+	Job string
 }
 
 type ByContainerIndex []Option

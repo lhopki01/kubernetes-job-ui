@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 import '../stylesheets/App.css';
 import CronJobs from './views/CronJobs.jsx';
 import CronJob from './views/CronJob.jsx';
 import Job from './views/Job.jsx';
+import CreateJob from './views/CreateJob.jsx';
 
 class App extends React.Component {
     constructor(props) {
@@ -35,8 +36,6 @@ class App extends React.Component {
                 <pre>Loading</pre>
             )
         } else {
-            console.log(this.state.str)
-            console.log(this.state.cronJobs)
             return (
                 <Router>
                     <Route exact path="/" render={() => <CronJobs cronJobs={this.state.cronJobs}/>}></Route>
@@ -51,6 +50,7 @@ class App extends React.Component {
                             />}>
                     </Route>
                     <Route path="/namespaces/:namespace/cronjobs/:cronJobName/jobs/:jobName" component={Job}></Route>
+                    <Route path="/createjob" render={props => <CreateJob {...props} cronJobs={this.state.cronJobs}/>}></Route>
                 </Router>
             );
         }

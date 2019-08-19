@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/viper"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -203,19 +204,19 @@ func getImageTag(image string) string {
 	return "latest"
 }
 
-func (c *Collection) GetCronJob(cronJobName string) CronJob {
+func (c *Collection) GetCronJob(namespace, cronJobName string) CronJob {
 	c.Lock()
 	defer c.Unlock()
 	for _, cj := range c.CronJobs {
-		if cj.Name == cronJobName {
+		if cj.Name == cronJobName && cj.Namespace == namespace {
 			return cj
 		}
 	}
 	return CronJob{}
 }
 
-func (c *Collection) GetJob(cronJobName string, jobName string) Job {
-	cronJob := c.GetCronJob(cronJobName)
+func (c *Collection) GetJob(namespace, cronJobName, jobName string) Job {
+	cronJob := c.GetCronJob(namespace, cronJobName)
 	c.Lock()
 	defer c.Unlock()
 	for _, j := range cronJob.Jobs {
@@ -354,17 +355,57 @@ func (c *Collection) GetPodLogs(job string) (pods []Pod) {
 	return pods
 }
 
-func (c *Collection) RunJob(cronJobName string, envVars []string) (name string, err error) {
-	newJobObject := c.createJobFromCronJob(cronJobName, envVars)
-	cronJob := c.GetCronJob(cronJobName)
-	job, err := c.Client.BatchV1().Jobs(cronJob.Namespace).Create(
-		newJobObject,
-	)
-	return job.Name, err
+func (c *Collection) ValidateEnvVars(namespace, cronJobName string, envVars []ResponseOption) []ValidationError {
+	cronJob := c.GetCronJob(namespace, cronJobName)
+	var validationErrors []ValidationError
+	for i, option := range cronJob.Config.Options {
+		for _, envVar := range envVars {
+			if option.Container == envVar.Container && option.EnvVar == envVar.EnvVar {
+				err := ValidateEnvVar(option, envVar)
+				if err != nil {
+					validationErrors = append(validationErrors, ValidationError{
+						EnvVar:      envVar.EnvVar,
+						Container:   envVar.Container,
+						OptionIndex: i,
+						Error:       err.Error(),
+					})
+				}
+			}
+		}
+	}
+	spew.Dump(validationErrors)
+	return validationErrors
 }
 
-func (c *Collection) createJobFromCronJob(cronJobName string, envVars []string) *batchv1.Job {
-	cronJob := c.GetCronJob(cronJobName)
+func ValidateEnvVar(option Option, envVar ResponseOption) error {
+	switch option.Type {
+	case "list":
+		for _, v := range option.Values {
+			if v == envVar.Value {
+				return nil
+			}
+		}
+		return fmt.Errorf(
+			"'%s' not one of ['%s']",
+			envVar.Value,
+			strings.Join(option.Values, "', '"),
+		)
+	case "string":
+		return nil
+	}
+	return nil
+}
+
+func (c *Collection) RunJob(namespace, cronJobName string, envVars []ResponseOption) (CreateResponse, error) {
+	newJobObject := c.createJobFromCronJob(namespace, cronJobName, envVars)
+	job, err := c.Client.BatchV1().Jobs(namespace).Create(
+		newJobObject,
+	)
+	return CreateResponse{Job: job.Name}, err
+}
+
+func (c *Collection) createJobFromCronJob(namespace, cronJobName string, envVars []ResponseOption) *batchv1.Job {
+	cronJob := c.GetCronJob(namespace, cronJobName)
 	annotations := make(map[string]string)
 	annotations["cronjob.kubernetes.io/instantiate"] = "manual"
 	for k, v := range cronJob.Object.Spec.JobTemplate.Annotations {
@@ -373,14 +414,18 @@ func (c *Collection) createJobFromCronJob(cronJobName string, envVars []string) 
 
 	spec := cronJob.Object.Spec.JobTemplate.Spec
 	envVarSlice := make([][]corev1.EnvVar, len(spec.Template.Spec.Containers))
-	for i, v := range envVars {
-		option := cronJob.Config.Options[i]
-		envVarSlice[option.ContainerIndex] = append(
-			envVarSlice[option.ContainerIndex],
-			corev1.EnvVar{
-				Name:  option.EnvVar,
-				Value: v,
-			})
+	for _, v := range envVars {
+		for _, w := range cronJob.Config.Options {
+			if v.EnvVar == w.EnvVar && v.Container == w.Container {
+				envVarSlice[w.ContainerIndex] = append(
+					envVarSlice[w.ContainerIndex],
+					corev1.EnvVar{
+						Name:  w.EnvVar,
+						Value: v.Value,
+					},
+				)
+			}
+		}
 	}
 
 	for i, c := range spec.Template.Spec.Containers {

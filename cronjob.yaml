@@ -21,7 +21,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; for i in $(seq 1 10); do echo "Hello, $FOOBAR $i"; sleep 3; done
+            - date; for i in $(seq 1 25); do echo "Hello, $FOOBAR $i"; sleep 3; done
           restartPolicy: Never
 ---
 # cronjob.yaml
@@ -81,7 +81,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "$FOOBAR"; if [ $RANDOM -gt 5766 ]; then echo "failing"; exit 1; fi
+            - date; echo "$FOOBAR"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
             env:
               - name: FOOBAR
                 value: "FOOBAR not set"
@@ -90,7 +90,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "$BARFOO"; if [ $RANDOM -gt 5766 ]; then echo "failing"; exit 1; fi
+            - date; echo "$BARFOO"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
             env:
               - name: BARFOO
                 value: "BARFOO not set"
