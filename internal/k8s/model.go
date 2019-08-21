@@ -10,37 +10,37 @@ import (
 )
 
 type Pod struct {
-	Name         string
-	Namespace    string
-	CreationTime metav1.Time
-	Phase        corev1.PodPhase
-	Containers   []Container
+	Name         string          `json:"name"`
+	Namespace    string          `json:"namespace"`
+	CreationTime metav1.Time     `json:"creationTime"`
+	Phase        corev1.PodPhase `json:"phase"`
+	Containers   []Container     `json:"containers"`
 }
 
 type Container struct {
-	Name string
-	Logs string
+	Name string `json:"name"`
+	Logs string `json:"logs"`
 }
 
 type Job struct {
-	Name         string
-	Namespace    string
-	CreationTime metav1.Time
-	Running      bool
-	Passed       bool
-	Manual       bool
-	Status       string
-	Pods         []Pod
+	Name         string      `json:"name"`
+	Namespace    string      `json:"namespace"`
+	CreationTime metav1.Time `json:"creationTime"`
+	Running      bool        `json:"running"`
+	Passed       bool        `json:"passed"`
+	Manual       bool        `json:"manual"`
+	Status       string      `json:"status"`
+	Pods         []Pod       `json:"pods"`
 }
 
 type CronJob struct {
-	Name         string
-	Namespace    string
-	CreationTime metav1.Time
-	Schedule     string
-	Jobs         []Job
-	Config       JobOptions
-	Object       *v1beta1.CronJob
+	Name         string      `json:"name"`
+	Namespace    string      `json:"namespace"`
+	CreationTime metav1.Time `json:"creationTime"`
+	Schedule     string      `json:"schedule"`
+	Jobs         []Job       `json:"jobs"`
+	Config       JobOptions  `json:"config"`
+	object       *v1beta1.CronJob
 }
 
 type Collection struct {
@@ -50,10 +50,10 @@ type Collection struct {
 }
 
 type JobOptions struct {
-	Description string
-	Options     []Option
-	Error       string
-	Raw         string
+	Description string   `json:"description"`
+	Options     []Option `json:"options"`
+	Error       string   `json:"error"`
+	Raw         string   `json:"raw"`
 }
 
 const (
@@ -62,30 +62,30 @@ const (
 )
 
 type Option struct {
-	EnvVar         string
-	Type           string
-	Values         []string
-	Default        string
-	Description    string
-	Container      string
-	ContainerIndex int
+	EnvVar         string   `json:"envVar"`
+	Type           string   `json:"type"`
+	Values         []string `json:"values"`
+	Default        string   `json:"default"`
+	Description    string   `json:"description"`
+	Container      string   `json:"container"`
+	ContainerIndex int      `json:"containerIndex"`
 }
 
 type ResponseOption struct {
-	EnvVar    string
-	Container string
-	Value     string
+	EnvVar    string `json:"envVar"`
+	Container string `json:"container"`
+	Value     string `json:"value"`
 }
 
 type ValidationError struct {
-	EnvVar      string
-	Container   string
-	OptionIndex int
-	Error       string
+	EnvVar      string `json:"envVar"`
+	Container   string `json:"container"`
+	OptionIndex int    `json:"optionIndex"`
+	Error       string `json:"error"`
 }
 
 type CreateResponse struct {
-	Job string
+	Job string `json:"job"`
 }
 
 type ByContainerIndex []Option

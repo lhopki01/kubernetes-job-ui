@@ -3,6 +3,7 @@ package site
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
@@ -15,9 +16,9 @@ func Serve(collection *k8s.Collection) {
 	r := gin.Default()
 	r.Use(cors.Default())
 
-	r.Static("/static", "./static")
+	//r.Static("/static", "./static")
 
-	r.LoadHTMLGlob("templates/*.tmpl")
+	//r.LoadHTMLGlob("templates/*.tmpl")
 
 	r.GET("api/v1/cronjobs", func(c *gin.Context) {
 		c.JSON(http.StatusOK, collection.GetCronJobs())
@@ -44,6 +45,7 @@ func Serve(collection *k8s.Collection) {
 			}
 		}
 	})
+
 	//r.GET("api/v1/cronjobs/:cronJobName", func(c *gin.Context) {
 	//	cronJobName := c.Param("cronJobName")
 	//	c.JSON(200, collection.GetCronJob(cronJobName))
@@ -111,6 +113,15 @@ func Serve(collection *k8s.Collection) {
 	//		fmt.Sprintf("/job?cronjob=%s&job=%s", cronJobName, jobName),
 	//	)
 	//})
+	target := "localhost:3000"
+	r.NoRoute(func(c *gin.Context) {
+		director := func(req *http.Request) {
+			req.URL.Scheme = "http"
+			req.URL.Host = target
+		}
+		proxy := &httputil.ReverseProxy{Director: director}
+		proxy.ServeHTTP(c.Writer, c.Request)
+	})
 
 	err := r.Run() // listen and serve on 0.0.0.0:8080
 	if err != nil {

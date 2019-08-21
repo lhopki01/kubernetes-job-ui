@@ -1,5 +1,5 @@
 import React from 'react';
-import NavBar from '../NavBar.jsx';
+import { NavBar } from '../NavBar';
 
 class Job extends React.Component {
     constructor(props) {
@@ -10,16 +10,13 @@ class Job extends React.Component {
         }
     }
 
-    getLogs() {
-
+    async getLogs() {
         if (this.state.poll) {
-            const url = "http://localhost:8080/api/v1/namespaces/"+this.props.match.params.namespace+"/jobs/"+this.props.match.params.jobName;
-            fetch(url)
-            .then((response) =>
-                response.json()
-            )
-            .then((jsonData) => {
-                if (jsonData[0].Phase !== "Running") {
+            try {
+                const url = "/api/v1/namespaces/"+this.props.match.params.namespace+"/jobs/"+this.props.match.params.jobName;
+                const response = await fetch(url)
+                const jsonData = await response.json()
+                if (jsonData[0].phase !== "Running") {
                     this.setState({
                         poll: false,
                     })
@@ -29,18 +26,18 @@ class Job extends React.Component {
                     isLoading: false,
                 })
                 return jsonData
-            })
-            .catch((error) => {
+
+            } catch(error) {
                 console.error(error)
-            })
+            }
         } else {
             clearInterval(this.interval)
         }
-    } 
+    }
 
     componentDidMount() {
         this.getLogs()
-        this.interval = setInterval(() => this.getLogs(), 1000);
+        this.interval = setInterval(() => this.getLogs(), 2000);
     }
 
     render() {
@@ -66,11 +63,11 @@ class Job extends React.Component {
 
 
 function ContainerLogs(props) {
-    return (props.Containers.map((c, index) => {
+    return (props.containers.map((c, index) => {
         return (
-            <React.Fragment key={c.Name}>
+            <React.Fragment key={c.name}>
                 <tr><th colSpan="4">Container: {c.Name}</th></tr>
-                <tr><td colSpan="4"><pre>{c.Logs}</pre></td></tr>
+                <tr><td colSpan="4"><pre>{c.logs}</pre></td></tr>
             </React.Fragment>
         )
     }))
@@ -87,11 +84,11 @@ function LogsTable(props) {
                     <th>Phase</th>
                 </tr>
                 <tr>
-                    <td>{item.Name}</td>
-                    <td>{item.CreationTime}</td>
-                    <td>{item.Phase}</td>
+                    <td>{item.name}</td>
+                    <td>{item.creationTime}</td>
+                    <td>{item.phase}</td>
                 </tr>
-                <ContainerLogs Containers={item.Containers} PodName={item.Name} />
+                <ContainerLogs containers={item.containers} />
             </React.Fragment>
         )
     })
@@ -107,5 +104,5 @@ function LogsTable(props) {
 
 }
 
-export default Job
+export { Job }
 

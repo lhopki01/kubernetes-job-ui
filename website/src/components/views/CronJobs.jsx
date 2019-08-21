@@ -1,6 +1,6 @@
 import React from 'react';
-import JobStatusIcon from '../JobStatusIcon.jsx';
-import NavBar from '../NavBar.jsx';
+import { JobStatusIcon } from '../JobStatusIcon';
+import { NavBar } from '../NavBar';
 
 class CronJobs extends React.Component {
     render() {
@@ -18,13 +18,13 @@ class CronJobsTable extends React.Component {
     render() {
         const rows = this.props.cronJobs.map((item, index) => {
             return (
-                <tr key={item.Name+item.Namespace}>
-                    <td><a href={"namespaces/"+item.Namespace+"/cronjobs/"+item.Name}>{item.Name}</a></td>
-                    <td>{item.Namespace}</td>
-                    <td>{item.Schedule}</td>
-                    <td><ReturnFirstJob CronJob={item}></ReturnFirstJob></td>
-                    <td><ReturnPreviousJobs CronJob={item}></ReturnPreviousJobs></td>
-                    <td><RunButton CronJob={item}></RunButton></td>
+                <tr key={item.name+item.namespace}>
+                    <td><a href={"namespaces/"+item.namespace+"/cronjobs/"+item.name}>{item.name}</a></td>
+                    <td>{item.namespace}</td>
+                    <td>{item.schedule}</td>
+                    <td><ReturnFirstJob cronJob={item}></ReturnFirstJob></td>
+                    <td><ReturnPreviousJobs cronJob={item}></ReturnPreviousJobs></td>
+                    <td><RunButton cronJob={item}></RunButton></td>
                 </tr>
             )
         })
@@ -50,7 +50,7 @@ class CronJobsTable extends React.Component {
 
 function RunButton(props) {
     return(
-        <a href={"/createjob?namespace="+props.CronJob.Namespace+"&cronjob="+props.CronJob.Name}>
+        <a href={"/createjob?namespace="+props.cronJob.namespace+"&cronjob="+props.cronJob.name}>
             <svg id="i-play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="25" height="25" fill="none" stroke="currentcolor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="text-centre">
                 <path d="M10 2 L10 30 24 16 Z" />
             </svg>
@@ -59,29 +59,25 @@ function RunButton(props) {
 }
 
 function ReturnFirstJob(props) {
-    if (props.CronJob.Jobs != null && props.CronJob.Jobs.length > 0) {
+    if (props.cronJob.jobs != null && props.cronJob.jobs.length > 0) {
         return (
-            <JobStatusIcon CronJob={props.CronJob} Job={props.CronJob.Jobs[0]} />
+            <JobStatusIcon cronJob={props.cronJob} job={props.cronJob.jobs[0]} />
         )
     }
-    return (
-        null
-    )
+    return null
 }
 
 function ReturnPreviousJobs(props) {
-    if (props.CronJob.Jobs != null && props.CronJob.Jobs.length > 1) {
-        return props.CronJob.Jobs.slice(1).map(job => {
+    if (props.cronJob.jobs != null && props.cronJob.jobs.length > 1) {
+        return props.cronJob.jobs.slice(1).map(job => {
             return (
-                <JobStatusIcon key={job.Name} Job={job} CronJob={props.CronJob} />
+                <JobStatusIcon key={job.name} job={job} cronJob={props.cronJob} />
             )
         })
     }
-    return (
-        null
-    )
+    return null
 }
 
 
 
-export default CronJobs;
+export { CronJobs }

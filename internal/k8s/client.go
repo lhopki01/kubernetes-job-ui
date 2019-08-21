@@ -97,7 +97,7 @@ func (c *Collection) UpdateCollection() {
 			Namespace:    cj.Namespace,
 			CreationTime: cj.CreationTimestamp,
 			Schedule:     cj.Spec.Schedule,
-			Object:       cj.DeepCopy(),
+			object:       cj.DeepCopy(),
 			Jobs:         orderedOwnedJobs(js.Items, cj.Name, cj.Namespace),
 		}
 		if *cj.Spec.Suspend {
@@ -408,11 +408,11 @@ func (c *Collection) createJobFromCronJob(namespace, cronJobName string, envVars
 	cronJob := c.GetCronJob(namespace, cronJobName)
 	annotations := make(map[string]string)
 	annotations["cronjob.kubernetes.io/instantiate"] = "manual"
-	for k, v := range cronJob.Object.Spec.JobTemplate.Annotations {
+	for k, v := range cronJob.object.Spec.JobTemplate.Annotations {
 		annotations[k] = v
 	}
 
-	spec := cronJob.Object.Spec.JobTemplate.Spec
+	spec := cronJob.object.Spec.JobTemplate.Spec
 	envVarSlice := make([][]corev1.EnvVar, len(spec.Template.Spec.Containers))
 	for _, v := range envVars {
 		for _, w := range cronJob.Config.Options {
@@ -445,12 +445,12 @@ func (c *Collection) createJobFromCronJob(namespace, cronJobName string, envVars
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Annotations: annotations,
-			Labels:      cronJob.Object.Spec.JobTemplate.Labels,
+			Labels:      cronJob.object.Spec.JobTemplate.Labels,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cronJob.Object, appsv1.SchemeGroupVersion.WithKind("CronJob")),
+				*metav1.NewControllerRef(cronJob.object, appsv1.SchemeGroupVersion.WithKind("CronJob")),
 			},
 		},
-		Spec: cronJob.Object.Spec.JobTemplate.Spec,
+		Spec: cronJob.object.Spec.JobTemplate.Spec,
 	}
 }
 

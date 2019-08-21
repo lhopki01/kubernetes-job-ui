@@ -1,6 +1,6 @@
 import React from 'react';
-import JobStatusIcon from '../JobStatusIcon.jsx';
-import NavBar from '../NavBar.jsx';
+import { JobStatusIcon } from '../JobStatusIcon';
+import { NavBar } from '../NavBar';
 
 class CronJob extends React.Component {
     render() {
@@ -13,18 +13,16 @@ class CronJob extends React.Component {
     }
 }
 
-export default CronJob
-
 function CronJobTable(props) {
     const jobs = props.cronJobs.map((item, index) => {
-        if (item.Name === props.match.params.cronJobName && item.Namespace === props.match.params.namespace) {
-            return (item.Jobs.map((job, index) => {
+        if (item.name === props.match.params.cronJobName && item.namespace === props.match.params.namespace) {
+            return (item.jobs.map((job, index) => {
                 return (
-                    <tr key={job.Name}>
-                        <td><a href={item.Name+"/jobs/"+job.Name}>{job.Name}</a></td>
-                        <td>{job.Namespace}</td>
-                        <td>{job.CreationTime}</td>
-                        <td><JobStatusIcon CronJob={item} Job={job} /></td>
+                    <tr key={job.name}>
+                        <td><a href={item.name+"/jobs/"+job.name}>{job.name}</a></td>
+                        <td>{job.namespace}</td>
+                        <td>{job.creationTime}</td>
+                        <td><JobStatusIcon cronJob={item} job={job} /></td>
                     </tr>
                 )
             }))
@@ -49,3 +47,5 @@ function CronJobTable(props) {
         </div>
     )
 }
+
+export { CronJob }
