@@ -136,6 +136,7 @@ func (c *Collection) UpdateCollection() {
 				}
 			}
 		}
+		// Sort to make it easier to display options grouped by container on the frontend
 		sort.Sort(ByContainerIndex(cronJob.Config.Options))
 		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
 	}
@@ -305,10 +306,11 @@ func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	return pods
 }
 
-func (c *Collection) GetPodLogs(job string) (pods []Pod) {
-	namespace := viper.GetString("namespace")
+func (c *Collection) GetPodLogs(namespace, cronJobName, jobName string) (pods []Pod) {
+	c.UpdateCollection()
+	job := c.GetJob(namespace, cronJobName, jobName)
 	ps, err := c.Client.CoreV1().Pods(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("job-name=%s", job),
+		LabelSelector: fmt.Sprintf("job-name=%s", jobName),
 	})
 	if err != nil {
 		println(err)

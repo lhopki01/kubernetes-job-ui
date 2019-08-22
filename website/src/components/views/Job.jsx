@@ -13,7 +13,8 @@ class Job extends React.Component {
     async getLogs() {
         if (this.state.poll) {
             try {
-                const url = "/api/v1/namespaces/"+this.props.match.params.namespace+"/jobs/"+this.props.match.params.jobName;
+                const {namespace, jobName} = this.props.match.params
+                const url = `/api/v1/namespaces/${namespace}/jobs/${jobName}`
                 const response = await fetch(url)
                 const jsonData = await response.json()
                 if (jsonData[0].phase !== "Running") {

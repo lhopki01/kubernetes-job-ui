@@ -22,7 +22,6 @@ class App extends React.Component {
             this.setState({
                cronJobs: jsonData,
                isLoading: false,
-               str: "foobar",
             })
         } catch(error) {
             console.error(error)

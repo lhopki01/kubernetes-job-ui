@@ -35,13 +35,6 @@ metadata:
         "description": "A job to deploy the current k8s-manifests configuration of the specified helm chart",
         "options": [
           {
-            "envvar": "BARFOO",
-            "default": "some value",
-            "type": "string",
-            "descriptions": "Helm chart to deploy",
-            "container": "goodbye"
-          },
-          {
             "envvar": "FOOBAR",
             "type": "list",
             "values": [
@@ -52,6 +45,13 @@ metadata:
             "default": "foobar",
             "description": "An option to select what type of foo",
             "container": "hello"
+          },
+          {
+            "envvar": "BARFOO",
+            "default": "some value",
+            "type": "string",
+            "descriptions": "Helm chart to deploy",
+            "container": "goodbye"
           },
           {
             "envvar": "VERY_LONG_BOOLEAN_VALUE",

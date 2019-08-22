@@ -5,20 +5,16 @@ import { NavBar } from '../NavBar';
 class CreateJob extends React.Component {
     constructor(props) {
         super(props);
-        this.onSubmitWithProps = this.onSubmitWithProps.bind(this)
 
         const queryValues = queryString.parse(props.location.search)
-        let cronJob = {}
-        props.cronJobs.map(item => {
+        const cronJob = props.cronJobs.reduce((matchedCronJob, item) => {
             if (queryValues.namespace === item.namespace && queryValues.cronjob === item.name) {
-                cronJob = item
+                matchedCronJob = item
             }
-            return null
-        })
-        let formValues = {}
-        cronJob.config.options.map((option, index) => {
-            formValues[index] = option.default
-            return null
+            return matchedCronJob
+        }, {})
+        let formValues = cronJob.config.options.map((option, index) => {
+            return option.default
         })
 
         this.state = {
@@ -29,39 +25,41 @@ class CreateJob extends React.Component {
         }
     }
 
-    async onSubmitWithProps(event, props) {
+    onSubmitWithProps = async (event, props) => {
         event.preventDefault();
-        let jobRequest = new Array(props.cronJob.config.options.length)
-        let formValues = {}
-        props.cronJob.config.options.map((option, index) => {
-            jobRequest[index] = {
+        const options = props.cronJob.config.options
+        const jobRequest = options.map((option, index) => {
+            return {
                 "envVar": option.envVar,
                 "container": option.container,
                 "value": event.target[index].value,
             }
-            formValues[index] = event.target[index].value
-            return null
+        })
+        let formValues = options.map((option, index) => {
+            return event.target[index].value
         })
         this.setState({
             formValues: formValues
         })
-        const url = "api/v1/namespaces/"+props.cronJob.namespace+"/cronjobs/"+props.cronJob.name
+        const { namespace, name } = props.cronJob
+        const url = `api/v1/namespaces/${namespace}/cronjobs/${name}`
         try {
             const response = await fetch(url, {
                 method: 'post',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(jobRequest),
             })
-            const jsonData = await response.clone().json()
+            const jsonData = await response.json()
             if (response.status === 200) {
                 console.log(jsonData)
-                this.props.history.push("/namespaces/"+props.cronJob.namespace+"/cronjobs/"+props.cronJob.name+"/jobs/"+jsonData.job)
+                const { namespace, cronJobName } = props.cronJob
+                this.props.history.push(`/namespaces/${namespace}/cronjobs/${cronJobName}/jobs/${jsonData.job}`)
                 return
             }
+            // using an array because want to to lookup by number
             let errors = {}
-            jsonData.map(error => {
+            jsonData.forEach(error => {
                 errors[error.optionIndex] = error.error
-                return null
             })
             this.setState({
                 errors: errors
