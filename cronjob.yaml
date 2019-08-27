@@ -35,7 +35,7 @@ metadata:
         "description": "A job to deploy the current k8s-manifests configuration of the specified helm chart",
         "options": [
           {
-            "envvar": "FOOBAR",
+            "envvar": "LIST",
             "type": "list",
             "values": [
               "FOO",
@@ -47,15 +47,37 @@ metadata:
             "container": "hello"
           },
           {
-            "envvar": "BARFOO",
-            "default": "some value",
-            "type": "string",
-            "descriptions": "Helm chart to deploy",
+            "envvar": "INT",
+            "default": "1",
+            "type": "int",
+            "descriptions": "int to deploy",
             "container": "goodbye"
           },
           {
-            "envvar": "VERY_LONG_BOOLEAN_VALUE",
-            "type": "list",
+            "envvar": "FLOAT",
+            "default": "1.1",
+            "type": "float",
+            "descriptions": "float to deploy",
+            "container": "goodbye"
+          },
+          {
+            "envvar": "REGEX",
+            "default": "",
+            "type": "regex",
+            "regex": "^int-.*",
+            "descriptions": "regex to deploy",
+            "container": "goodbye"
+          },
+          {
+            "envvar": "TEXTAREA",
+            "default": "",
+            "type": "textarea",
+            "descriptions": "freeform text",
+            "container": "goodbye"
+          },
+          {
+            "envvar": "BOOL",
+            "type": "bool",
             "values": [
               "true",
               "false"
@@ -67,11 +89,13 @@ metadata:
         ]
       }
 spec:
-  schedule: "*/2 * * * *"
+  schedule: "0,15,30,45 * * * *"
   successfulJobsHistoryLimit: 5
   failedJobsHistoryLimit: 5
   jobTemplate:
     spec:
+      parallelism: 1
+      completions: 1
       backoffLimit: 1
       template:
         spec:
@@ -81,7 +105,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "$FOOBAR"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            - date; echo "container hello $FOOBAR"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
             env:
               - name: FOOBAR
                 value: "FOOBAR not set"
@@ -90,7 +114,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - date; echo "$BARFOO"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            - date; echo "container goodbye $BARFOO"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
             env:
               - name: BARFOO
                 value: "BARFOO not set"

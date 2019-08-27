@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobStatusIcon } from '../JobStatusIcon';
+import { JobStatusIconLink } from '../JobStatusIcon';
 import { NavBar } from '../NavBar';
 
 class CronJob extends React.Component {
@@ -22,7 +22,7 @@ function CronJobTable(props) {
                         <td><a href={item.name+"/jobs/"+job.name}>{job.name}</a></td>
                         <td>{job.namespace}</td>
                         <td>{job.creationTime}</td>
-                        <td><JobStatusIcon cronJob={item} job={job} /></td>
+                        <td><JobStatusIconLink cronJob={item} job={job} /></td>
                     </tr>
                 )
             }))

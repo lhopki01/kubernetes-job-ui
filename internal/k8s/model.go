@@ -4,25 +4,25 @@ import (
 	"sync"
 
 	"k8s.io/api/batch/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-type Pod struct {
-	Name         string          `json:"name"`
-	Namespace    string          `json:"namespace"`
-	CreationTime metav1.Time     `json:"creationTime"`
-	Phase        corev1.PodPhase `json:"phase"`
-	Containers   []Container     `json:"containers"`
-}
 
 type Container struct {
 	Name string `json:"name"`
 	Logs string `json:"logs"`
 }
 
+type Pod struct {
+	Name         string      `json:"name"`
+	Namespace    string      `json:"namespace"`
+	CreationTime metav1.Time `json:"creationTime"`
+	Status       string      `json:"status"`
+	Containers   []Container `json:"containers"`
+}
+
 type Job struct {
+	sync.Mutex
 	Name         string      `json:"name"`
 	Namespace    string      `json:"namespace"`
 	CreationTime metav1.Time `json:"creationTime"`
@@ -39,20 +39,22 @@ type CronJob struct {
 	CreationTime metav1.Time `json:"creationTime"`
 	Schedule     string      `json:"schedule"`
 	Jobs         []Job       `json:"jobs"`
-	Config       JobOptions  `json:"config"`
+	Config       Config      `json:"config"`
 	object       *v1beta1.CronJob
 }
 
 type Collection struct {
 	sync.Mutex
-	CronJobs []CronJob
-	Client   *kubernetes.Clientset
+	cronJobs      []CronJob
+	monitoredJobs map[string]Job
+	Client        *kubernetes.Clientset
 }
 
-type JobOptions struct {
+type Config struct {
 	Description string   `json:"description"`
 	Options     []Option `json:"options"`
 	Error       string   `json:"error"`
+	Errors      []string `json:"errors"`
 	Raw         string   `json:"raw"`
 }
 
@@ -65,10 +67,11 @@ type Option struct {
 	EnvVar         string   `json:"envVar"`
 	Type           string   `json:"type"`
 	Values         []string `json:"values"`
+	Regex          string   `json:"regex"`
 	Default        string   `json:"default"`
 	Description    string   `json:"description"`
 	Container      string   `json:"container"`
-	ContainerIndex int      `json:"containerIndex"`
+	containerIndex int
 }
 
 type ResponseOption struct {
@@ -91,5 +94,5 @@ type CreateResponse struct {
 type ByContainerIndex []Option
 
 func (a ByContainerIndex) Len() int           { return len(a) }
-func (a ByContainerIndex) Less(i, j int) bool { return a[i].ContainerIndex < a[j].ContainerIndex }
+func (a ByContainerIndex) Less(i, j int) bool { return a[i].containerIndex < a[j].containerIndex }
 func (a ByContainerIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

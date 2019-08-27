@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobStatusIcon } from '../JobStatusIcon';
+import { JobStatusIconLink } from '../JobStatusIcon';
 import { NavBar } from '../NavBar';
 
 class CronJobs extends React.Component {
@@ -61,7 +61,7 @@ function RunButton(props) {
 function ReturnFirstJob(props) {
     if (props.cronJob.jobs != null && props.cronJob.jobs.length > 0) {
         return (
-            <JobStatusIcon cronJob={props.cronJob} job={props.cronJob.jobs[0]} />
+            <JobStatusIconLink cronJob={props.cronJob} job={props.cronJob.jobs[0]} />
         )
     }
     return null
@@ -71,7 +71,7 @@ function ReturnPreviousJobs(props) {
     if (props.cronJob.jobs != null && props.cronJob.jobs.length > 1) {
         return props.cronJob.jobs.slice(1).map(job => {
             return (
-                <JobStatusIcon key={job.name} job={job} cronJob={props.cronJob} />
+                <JobStatusIconLink key={job.name} job={job} cronJob={props.cronJob} />
             )
         })
     }

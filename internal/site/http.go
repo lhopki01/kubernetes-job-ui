@@ -2,19 +2,19 @@ package site
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/lhopki01/kubernetes-job-ui/internal/k8s"
 )
 
 func Serve(collection *k8s.Collection) {
+	gin.DefaultWriter = ioutil.Discard
 	r := gin.Default()
-	r.Use(cors.Default())
 
 	//r.Static("/static", "./static")
 
@@ -24,16 +24,21 @@ func Serve(collection *k8s.Collection) {
 		c.JSON(http.StatusOK, collection.GetCronJobs())
 	})
 	r.GET("api/v1/namespaces/:namespace/cronjobs/:cronjobname/jobs/:jobname", func(c *gin.Context) {
+		namespace := c.Param("namespace")
 		jobName := c.Param("jobname")
 		cronJobName := c.Param("cronjobname")
-		c.JSON(http.StatusOK, collection.GetPodLogs(namespace, cronJobName, jobName))
+		c.JSON(http.StatusOK, collection.GetJobLogs(namespace, cronJobName, jobName))
 	})
 	r.POST("api/v1/namespaces/:namespace/cronjobs/:cronJobName", func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		cronJobName := c.Param("cronJobName")
+
 		var options []k8s.ResponseOption
-		c.BindJSON(&options)
-		spew.Dump(options)
+		err := c.BindJSON(&options)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "{}")
+		}
+
 		validationErrors := collection.ValidateEnvVars(namespace, cronJobName, options)
 		if len(validationErrors) > 0 {
 			c.JSON(http.StatusUnprocessableEntity, validationErrors)
@@ -47,73 +52,6 @@ func Serve(collection *k8s.Collection) {
 		}
 	})
 
-	//r.GET("api/v1/cronjobs/:cronJobName", func(c *gin.Context) {
-	//	cronJobName := c.Param("cronJobName")
-	//	c.JSON(200, collection.GetCronJob(cronJobName))
-	//})
-	//r.GET("api/v1/cronjobs/:cronJobName/jobs", func(c *gin.Context) {
-	//	cronJobName := c.Param("cronJobName")
-	//	c.JSON(200, collection.GetCronJob(cronJobName).Jobs)
-	//})
-	//r.GET("api/v1/cronjobs/:cronJobName/jobs/:jobName", func(c *gin.Context) {
-	//	cronJobName := c.Param("cronJobName")
-	//	jobName := c.Param("jobName")
-	//	c.JSON(200, collection.GetJob(cronJobName, jobName))
-	//})
-
-	//r.GET("/cronjobs", func(c *gin.Context) {
-	//	c.HTML(http.StatusOK, "cronjobs.html.tmpl", gin.H{
-	//		"cronJobs": collection.GetCronJobs(),
-	//	})
-	//})
-	//r.GET("/cronjob", func(c *gin.Context) {
-	//	cronJobName := c.Query("cronjob")
-	//	c.HTML(http.StatusOK, "cronjob.html.tmpl", gin.H{
-	//		"cronJob":  collection.GetCronJob(cronJobName),
-	//		"cronJobs": collection.GetCronJobs(),
-	//	})
-
-	//})
-	//r.GET("/job", func(c *gin.Context) {
-	//	cronJobName := c.Query("cronjob")
-	//	jobName := c.Query("job")
-	//	job := collection.GetJob(cronJobName, jobName)
-	//	c.HTML(http.StatusOK, "job.html.tmpl", gin.H{
-	//		"cronJob": collection.GetCronJob(cronJobName),
-	//		"job":     job,
-	//		"pods":    collection.GetPodLogs(jobName),
-	//	})
-	//})
-	//r.GET("/createjob", func(c *gin.Context) {
-	//	cronJobName := c.Query("cronjob")
-	//	cronJob := collection.GetCronJob(cronJobName)
-
-	//	c.HTML(http.StatusOK, "createjob.html.tmpl", gin.H{
-	//		"jobOptions": cronJob.Config,
-	//		"cronJob":    cronJob,
-	//	})
-	//})
-	//r.POST("/createjob", func(c *gin.Context) {
-	//	cronJobName := c.Query("cronjob")
-	//	cronJob := collection.GetCronJob(cronJobName)
-
-	//	envVars := make([]string, len(cronJob.Config.Options))
-	//	i := 0
-	//	for i < len(cronJob.Config.Options) {
-	//		envVars[i] = c.PostForm(strconv.Itoa(i))
-	//		i++
-	//	}
-	//	spew.Dump(envVars)
-	//	jobName, err := collection.RunJob(cronJob.Name, envVars)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	collection.UpdateCollection()
-	//	c.Redirect(
-	//		http.StatusSeeOther,
-	//		fmt.Sprintf("/job?cronjob=%s&job=%s", cronJobName, jobName),
-	//	)
-	//})
 	target := "localhost:3000"
 	r.NoRoute(func(c *gin.Context) {
 		director := func(req *http.Request) {

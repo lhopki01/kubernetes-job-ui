@@ -13,9 +13,12 @@ class CreateJob extends React.Component {
             }
             return matchedCronJob
         }, {})
-        let formValues = cronJob.config.options.map((option, index) => {
-            return option.default
-        })
+        let formValues = []
+        if (cronJob.config.options !== null) {
+            formValues = cronJob.config.options.map((option, index) => {
+                return option.default
+            })
+        }
 
         this.state = {
             errors: {},
@@ -52,8 +55,8 @@ class CreateJob extends React.Component {
             const jsonData = await response.json()
             if (response.status === 200) {
                 console.log(jsonData)
-                const { namespace, cronJobName } = props.cronJob
-                this.props.history.push(`/namespaces/${namespace}/cronjobs/${cronJobName}/jobs/${jsonData.job}`)
+                const { namespace, name } = props.cronJob
+                this.props.history.push(`/namespaces/${namespace}/cronjobs/${name}/jobs/${jsonData.job}`)
                 return
             }
             // using an array because want to to lookup by number
@@ -82,25 +85,43 @@ class CreateJob extends React.Component {
 
 
 function JobForm(props) {
-            const onSubmit = (event) => {
-                    props.onSubmitWithProps(event, props)
-            }
-            return(
-                <React.Fragment key={props.cronJob.name}>
-                    <div className="container">
-                        <form onSubmit={onSubmit}>
-                            <Options options={props.cronJob.config.options} errors={props.errors} {...props}/>
-                            <div className="form-group row">
-                                <div className="col"></div>
-                                <div className="col">
-                                    <button type="submit" className="btn btn-primary float-right">Run</button>
-                                </div>
-                                <div className="col"></div>
-                            </div>
-                        </form>
-                    </div>
-                </React.Fragment>
+    console.log(props)
+    const onSubmit = (event) => {
+            props.onSubmitWithProps(event, props)
+    }
+    if (props.cronJob.config.errors !== null) {
+        const errors = props.cronJob.config.errors.map((error, index) => {
+            return (
+                <pre key={index} className="linewrap">{error}</pre>
             )
+        })
+        return(
+            <React.Fragment>
+            <div className="container">
+                <div className="alert alert-secondary">
+                    {errors}
+                </div>
+                <pre>{props.cronJob.config.raw}</pre>
+            </div>
+            </React.Fragment>
+        )
+    }
+    return(
+        <React.Fragment key={props.cronJob.name}>
+            <div className="container">
+                <form onSubmit={onSubmit}>
+                    <Options options={props.cronJob.config.options} errors={props.errors} {...props}/>
+                    <div className="form-group row">
+                        <div className="col"></div>
+                        <div className="col">
+                            <button type="submit" className="btn btn-primary float-right">Run</button>
+                        </div>
+                        <div className="col"></div>
+                    </div>
+                </form>
+            </div>
+        </React.Fragment>
+    )
 }
 
 function Options(props) {
@@ -113,7 +134,7 @@ function Options(props) {
                     <div className="row">
                         <div className="col" />
                         <div className="col">
-                                <h4>Container: {option.container}</h4>
+                            <h4>Container: {option.container}</h4>
                         </div>
                         <div className="col" />
                     </div>
@@ -135,12 +156,7 @@ function Option(props) {
                 {props.option.envVar}
             </label>
             <div className="col">
-                <input
-                    className="form-control"
-                    placeholder={props.option.default}
-                    defaultValue={props.formValues[props.index]}
-                    name={props.index}
-                />
+                <FormInput option={props.option} defaultValue={props.formValues[props.index]} name={props.index} />
             </div>
             <div className="col col-form-label">
                 <span>{props.option.description}</span>
@@ -166,6 +182,43 @@ function Option(props) {
     return (
         option
     )
+}
+
+function FormInput(props) {
+    console.log(props.option.type)
+    if (props.option.type === "list" || props.option.type === "bool") {
+        const selectOptions = props.option.values.map(selectOption => {
+            return (
+                <option key={selectOption}>{selectOption}</option>
+            )
+        })
+        return(
+            <select className="form-control" name={props.name}>
+                {selectOptions}
+            </select>
+
+        )
+    }
+    if (props.option.type === "textarea") {
+    return(
+        <textarea
+            className="form-control"
+            placeholder={props.option.default}
+            defaultValue={props.defaultValue}
+            name={props.name}
+        />
+    )
+
+    }
+    return(
+        <input
+            className="form-control"
+            placeholder={props.option.default}
+            defaultValue={props.defaultValue}
+            name={props.name}
+        />
+    )
+
 }
 
 export { CreateJob };

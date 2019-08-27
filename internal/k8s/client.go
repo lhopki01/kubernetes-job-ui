@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,6 +83,7 @@ func NewCollection() (collection *Collection) {
 	c := NewClient()
 	collection = new(Collection)
 	collection.Client = c
+	collection.monitoredJobs = make(map[string]Job)
 	collection.UpdateCollection()
 	return collection
 }
@@ -105,21 +107,17 @@ func (c *Collection) UpdateCollection() {
 		}
 
 		if val, ok := cj.Annotations["kubernetes-job-runner.io/config"]; ok {
-			err := json.Unmarshal([]byte(val), &cronJob.Config)
-			if jsonError, ok := err.(*json.SyntaxError); ok {
-				line, character, _ := lineAndCharacter(val, int(jsonError.Offset))
-				cronJob.Config.Error = fmt.Sprintf("Cannot parse JSON schema due to a syntax error at line %d, character %d: %v\n", line, character, jsonError.Error())
-			} else if jsonError, ok := err.(*json.UnmarshalTypeError); ok {
-				line, character, _ := lineAndCharacter(val, int(jsonError.Offset))
-				cronJob.Config.Error = fmt.Sprintf("The JSON type '%v' cannot be converted into the Go '%v' type on struct '%s', field '%v'. See input file line %d, character %d\n", jsonError.Value, jsonError.Type.Name(), jsonError.Struct, jsonError.Field, line, character)
-			} else if err != nil {
-				cronJob.Config.Error = err.Error()
+			config, err := unmarshalJson(val)
+			if err != nil {
+				config.Errors = append(config.Errors, err.Error())
 			}
+			cronJob.Config = config
+			cronJob.Config.Errors = append(cronJob.Config.Errors, validateConfig(cronJob.Config)...)
 			cronJob.Config.Raw = val
 			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
 				for j, option := range cronJob.Config.Options {
 					if option.Container == container.Name {
-						cronJob.Config.Options[j].ContainerIndex = i
+						cronJob.Config.Options[j].containerIndex = i
 					}
 				}
 			}
@@ -131,7 +129,7 @@ func (c *Collection) UpdateCollection() {
 						Default:        v.Value,
 						Type:           "string",
 						Container:      container.Name,
-						ContainerIndex: i,
+						containerIndex: i,
 					})
 				}
 			}
@@ -141,8 +139,58 @@ func (c *Collection) UpdateCollection() {
 		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
 	}
 	c.Lock()
-	c.CronJobs = cronJobs
+	c.cronJobs = cronJobs
 	c.Unlock()
+}
+
+func unmarshalJson(configString string) (config Config, err error) {
+	err = json.Unmarshal([]byte(configString), &config)
+	if jsonError, ok := err.(*json.SyntaxError); ok {
+		line, character, _ := lineAndCharacter(configString, int(jsonError.Offset))
+		return config, fmt.Errorf("Cannot parse JSON schema due to a syntax error at line %d, character %d: %v\n", line, character, jsonError.Error())
+	} else if jsonError, ok := err.(*json.UnmarshalTypeError); ok {
+		line, character, _ := lineAndCharacter(configString, int(jsonError.Offset))
+		return config, fmt.Errorf("The JSON type '%v' cannot be converted into the Go '%v' type on struct '%s', field '%v'. See input file line %d, character %d\n", jsonError.Value, jsonError.Type.Name(), jsonError.Struct, jsonError.Field, line, character)
+	} else if err != nil {
+		return config, err
+	}
+	return config, nil
+
+}
+
+func validateConfig(config Config) (errors []string) {
+	for _, option := range config.Options {
+		switch option.Type {
+		case "list":
+			if option.Values == nil || len(option.Values) == 0 {
+				errors = append(errors, fmt.Sprintf(
+					"'%s' in container '%s' does not have any values configured but is type 'list'",
+					option.EnvVar,
+					option.Container,
+				))
+			}
+		case "regex":
+			if option.Regex == "" {
+				errors = append(errors, fmt.Sprintf(
+					"'%s in container '%s' of type 'regex' does not have required field 'regex' set",
+					option.EnvVar,
+					option.Container,
+				))
+			} else {
+				_, err := regexp.Compile(option.Regex)
+				if err != nil {
+					errors = append(errors, fmt.Sprintf(
+						"'%s' in container '%s' regex failed to compile with error:\n%s",
+						option.EnvVar,
+						option.Container,
+						err.Error(),
+					))
+				}
+			}
+		}
+
+	}
+	return errors
 }
 
 func lineAndCharacter(input string, offset int) (line int, character int, err error) {
@@ -208,7 +256,7 @@ func getImageTag(image string) string {
 func (c *Collection) GetCronJob(namespace, cronJobName string) CronJob {
 	c.Lock()
 	defer c.Unlock()
-	for _, cj := range c.CronJobs {
+	for _, cj := range c.cronJobs {
 		if cj.Name == cronJobName && cj.Namespace == namespace {
 			return cj
 		}
@@ -256,7 +304,7 @@ func insertCronJobIntoSliceByCreationTime(cjs []CronJob, cronJob CronJob) []Cron
 func (c *Collection) GetCronJobs() []CronJob {
 	c.Lock()
 	defer c.Unlock()
-	cronJobs := c.CronJobs
+	cronJobs := c.cronJobs
 	return cronJobs
 }
 
@@ -306,21 +354,37 @@ func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 	return pods
 }
 
-func (c *Collection) GetPodLogs(namespace, cronJobName, jobName string) (pods []Pod) {
+func (c *Collection) GetJobLogs(namespace, cronJobName, jobName string) Job {
+	if job, ok := c.monitoredJobs[jobName]; ok {
+		fmt.Println("Found")
+		job.Lock()
+		defer job.Unlock()
+		return job
+	}
+	fmt.Println("Missed")
 	c.UpdateCollection()
 	job := c.GetJob(namespace, cronJobName, jobName)
+	job.Pods = c.getLogs(namespace, jobName)
+	c.monitoredJobs[jobName] = job
+	go c.monitorJobLogs(namespace, cronJobName, jobName)
+	return job
+}
+
+func (c *Collection) getLogs(namespace, jobName string) []Pod {
+	fmt.Printf("checking logs for %s\n", jobName)
 	ps, err := c.Client.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", jobName),
 	})
 	if err != nil {
 		println(err)
 	}
+	var pods []Pod
 	for _, p := range ps.Items {
 		pod := Pod{
 			Name:         p.Name,
 			Namespace:    p.Namespace,
 			CreationTime: p.CreationTimestamp,
-			Phase:        p.Status.Phase,
+			Status:       podStatus(p.Status.Phase),
 		}
 		for _, container := range p.Spec.Containers {
 			if p.Status.Phase == "Pending" {
@@ -340,7 +404,8 @@ func (c *Collection) GetPodLogs(namespace, cronJobName, jobName string) (pods []
 				defer podLogs.Close()
 
 				buf := new(bytes.Buffer)
-				_, err = io.Copy(buf, podLogs)
+				//_, err = io.Copy(buf, podLogs)
+				buf.ReadFrom(podLogs)
 				if err != nil {
 					fmt.Printf("failed to copy logs with err: %v\n", err)
 				}
@@ -355,6 +420,40 @@ func (c *Collection) GetPodLogs(namespace, cronJobName, jobName string) (pods []
 		pods = append(pods, pod)
 	}
 	return pods
+
+}
+
+func (c *Collection) monitorJobLogs(namespace, cronJobName, jobName string) {
+	getLogs := true
+
+	for getLogs {
+		time.Sleep(2 * time.Second)
+		pods := c.getLogs(namespace, jobName)
+		job := c.monitoredJobs[jobName]
+		job.Pods = pods
+		status := c.GetJob(namespace, cronJobName, jobName).Status
+		job.Status = status
+		getLogs = status == "active"
+		c.monitoredJobs[jobName] = job
+	}
+
+	fmt.Printf("finished checking logs for %s\n", jobName)
+	return
+}
+
+func podStatus(phase corev1.PodPhase) (status string) {
+	switch phase {
+	case "Pending":
+	case "Running":
+		return "active"
+	case "Succeeded":
+		return "succeeded"
+	case "Failed":
+		return "failed"
+	case "Unknonw":
+		return "unknown"
+	}
+	return "unknown"
 }
 
 func (c *Collection) ValidateEnvVars(namespace, cronJobName string, envVars []ResponseOption) []ValidationError {
@@ -363,7 +462,7 @@ func (c *Collection) ValidateEnvVars(namespace, cronJobName string, envVars []Re
 	for i, option := range cronJob.Config.Options {
 		for _, envVar := range envVars {
 			if option.Container == envVar.Container && option.EnvVar == envVar.EnvVar {
-				err := ValidateEnvVar(option, envVar)
+				err := validateEnvVar(option, envVar)
 				if err != nil {
 					validationErrors = append(validationErrors, ValidationError{
 						EnvVar:      envVar.EnvVar,
@@ -379,7 +478,7 @@ func (c *Collection) ValidateEnvVars(namespace, cronJobName string, envVars []Re
 	return validationErrors
 }
 
-func ValidateEnvVar(option Option, envVar ResponseOption) error {
+func validateEnvVar(option Option, envVar ResponseOption) error {
 	switch option.Type {
 	case "list":
 		for _, v := range option.Values {
@@ -392,6 +491,47 @@ func ValidateEnvVar(option Option, envVar ResponseOption) error {
 			envVar.Value,
 			strings.Join(option.Values, "', '"),
 		)
+	case "bool":
+		_, err := strconv.ParseBool(envVar.Value)
+		if err != nil {
+			return fmt.Errorf(
+				"'%s' can't be converted to a bool",
+				envVar.Value,
+			)
+		}
+		return nil
+	case "int":
+		_, err := strconv.Atoi(envVar.Value)
+		if err != nil {
+			return fmt.Errorf(
+				"'%s' can't be converted to an int",
+				envVar.Value,
+			)
+		}
+		return nil
+	case "float":
+		_, err := strconv.ParseFloat(envVar.Value, 64)
+		if err != nil {
+			return fmt.Errorf(
+				"'%s' can't be converted to an float",
+				envVar.Value,
+			)
+		}
+		return nil
+	case "regex":
+		r, err := regexp.Compile(option.Regex)
+		if err != nil {
+			fmt.Println(err)
+		}
+		match := r.FindString(envVar.Value)
+		if match == "" {
+			return fmt.Errorf(
+				"'%s' does not match regex `%s`",
+				envVar.Value,
+				option.Regex,
+			)
+		}
+	case "textarea":
 	case "string":
 		return nil
 	}
@@ -419,8 +559,8 @@ func (c *Collection) createJobFromCronJob(namespace, cronJobName string, envVars
 	for _, v := range envVars {
 		for _, w := range cronJob.Config.Options {
 			if v.EnvVar == w.EnvVar && v.Container == w.Container {
-				envVarSlice[w.ContainerIndex] = append(
-					envVarSlice[w.ContainerIndex],
+				envVarSlice[w.containerIndex] = append(
+					envVarSlice[w.containerIndex],
 					corev1.EnvVar{
 						Name:  w.EnvVar,
 						Value: v.Value,

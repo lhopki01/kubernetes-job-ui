@@ -1,4 +1,5 @@
 import React from 'react';
+import { JobStatusIcon } from '../JobStatusIcon';
 import { NavBar } from '../NavBar';
 
 class Job extends React.Component {
@@ -6,27 +7,36 @@ class Job extends React.Component {
         super(props);
         this.state = {
             isLoading: true,
-            poll: true,
+            shouldPoll: true,
         }
     }
 
+    shouldPoll(status) {
+        if (status === "active") {
+            return true
+        }
+        return false
+    }
+    isLoading(jsonData) {
+        if (jsonData.pods !== null) {
+            return false
+        }
+        return true
+    }
+
     async getLogs() {
-        if (this.state.poll) {
+        if (this.state.shouldPoll) {
             try {
-                const {namespace, jobName} = this.props.match.params
-                const url = `/api/v1/namespaces/${namespace}/jobs/${jobName}`
+                const {namespace, cronJobName, jobName} = this.props.match.params
+                const url = `/api/v1/namespaces/${namespace}/cronjobs/${cronJobName}/jobs/${jobName}`
                 const response = await fetch(url)
                 const jsonData = await response.json()
-                if (jsonData[0].phase !== "Running") {
-                    this.setState({
-                        poll: false,
-                    })
-                }
                 this.setState({
                     job: jsonData,
-                    isLoading: false,
+                    shouldPoll: this.shouldPoll(jsonData.status),
+                    isLoading: this.isLoading(jsonData)
                 })
-                return jsonData
+                return
 
             } catch(error) {
                 console.error(error)
@@ -51,56 +61,94 @@ class Job extends React.Component {
                     </div>
                 </React.Fragment>
             )
-        } else {
-            return (
-                <React.Fragment>
-                    <NavBar {...this.props} />
-                    <LogsTable job={this.state.job} />
-                </React.Fragment>
-            )
         }
+        return (
+            <React.Fragment>
+                <NavBar {...this.props} />
+                <JobInformationPanel job={this.state.job} />
+                <PodTabs job={this.state.job} />
+            </React.Fragment>
+        )
     }
 }
 
-
-function ContainerLogs(props) {
-    return (props.containers.map((c, index) => {
-        return (
-            <React.Fragment key={c.name}>
-                <tr><th colSpan="4">Container: {c.Name}</th></tr>
-                <tr><td colSpan="4"><pre>{c.logs}</pre></td></tr>
-            </React.Fragment>
-        )
-    }))
+function JobInformationPanel(props) {
+    return (
+        <div className="alert alert-secondary">
+            <h6>Job: {props.job.name} <JobStatusIcon status={props.job.status} /></h6>
+            <h6>Namespace: {props.job.namespace}</h6>
+            <h6>Creation Time: {props.job.creationTime}</h6>
+        </div>
+    )
 }
 
-
-function LogsTable(props) {
-    const logs = props.job.map((item, index) => {
+function PodTabs(props) {
+    const tabs = (props.job.pods.map((p, index) => {
+        let active = ""
+        if (index === 0) {
+            active="active"
+        }
         return (
-            <React.Fragment key={index}>
-                <tr>
-                    <th>Pod</th>
-                    <th>Creation Time</th>
-                    <th>Phase</th>
-                </tr>
-                <tr>
-                    <td>{item.name}</td>
-                    <td>{item.creationTime}</td>
-                    <td>{item.phase}</td>
-                </tr>
-                <ContainerLogs containers={item.containers} />
-            </React.Fragment>
+            <a key={p.name} className={"nav-item nav-link "+active} data-toggle="tab" href={"#"+p.name} role="tab"><h5>{p.name} <JobStatusIcon status={p.status}/></h5></a>
         )
-    })
+    }))
+    const tabContent = (props.job.pods.map((p, index) => {
+        let active = ""
+        if (index === 0) {
+            active="active show"
+        }
+        return (
+            <div key={p.name} className={"tab-pane fade "+active} id={p.name} role="tabpanel">
+                <ContainerTabs containers={p.containers} jobName={p.name}/>
+            </div>
+        )
+    }))
     return (
         <div className="container-fluid">
-            <table className="table table-condensed table-bordered table-striped">
-                <tbody>
-                    {logs}
-                </tbody>
-            </table>
+        <React.Fragment>
+        <div className="nav nav-tabs" id="nav-tab" role="tablist">
+            <div className="navbar-brand">Pods:</div>
+            {tabs}
         </div>
+        <div className="tab-content" id="nav-tabContent" role="tabpanel">
+            {tabContent}
+        </div>
+        </React.Fragment>
+        </div>
+    )
+}
+
+function ContainerTabs(props) {
+    const tabs = (props.containers.map((c, index) => {
+        let active = ""
+        if (index === 0) {
+            active="active"
+        }
+        return (
+            <a key={c.name} className={"nav-item nav-link "+active} data-toggle="tab" href={"#"+props.jobName+c.name} role="tab">{c.name}</a>
+        )
+    }))
+    const tabContent = (props.containers.map((c, index) => {
+        let active = ""
+        if (index === 0) {
+            active="active show"
+        }
+        return (
+            <div key={c.name} className={"tab-pane fade "+active} id={props.jobName+c.name} role="tabpanel">
+                <pre className="logs">{c.logs}</pre>
+            </div>
+        )
+    }))
+    return (
+        <React.Fragment>
+        <div className="nav nav-tabs" id="nav-tab" role="tablist">
+            <div className="navbar-brand">Containers:</div>
+            {tabs}
+        </div>
+        <div className="tab-content" id="nav-tabContent">
+            {tabContent}
+        </div>
+        </React.Fragment>
     )
 
 }
