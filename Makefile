@@ -1,4 +1,4 @@
-MODULE := github.com/lhopki01/git-mass-sync
+MODULE := github.com/lhopki01/kubernetes-job-ui
 
 test:
 	go test -race ./...
@@ -17,4 +17,5 @@ release:
 	goreleaser --rm-dist
 
 build:
+	go-bindata -o bindata/bindata.go -pkg bindata website/build/...
 	CGO_ENABLED=0 go build -ldflags "-X $(MODULE)/cmd.Version=$$VERSION"

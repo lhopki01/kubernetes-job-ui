@@ -17,6 +17,7 @@ func Serve(collection *k8s.Collection) {
 	r := gin.Default()
 
 	//r.Static("/static", "./static")
+	r.Stat
 
 	//r.LoadHTMLGlob("templates/*.tmpl")
 
