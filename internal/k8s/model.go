@@ -22,12 +22,9 @@ type Pod struct {
 }
 
 type Job struct {
-	sync.Mutex
 	Name         string      `json:"name"`
 	Namespace    string      `json:"namespace"`
 	CreationTime metav1.Time `json:"creationTime"`
-	Running      bool        `json:"running"`
-	Passed       bool        `json:"passed"`
 	Manual       bool        `json:"manual"`
 	Status       string      `json:"status"`
 	Pods         []Pod       `json:"pods"`

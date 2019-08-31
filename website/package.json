@@ -1,9 +1,11 @@
 {
   "name": "website",
   "version": "0.1.0",
+  "proxy": "http://localhost:8080",
   "private": true,
   "dependencies": {
     "bootstrap": "^4.3.1",
+    "bootswatch": "^4.3.1",
     "jquery": "^3.4.1",
     "popper.js": "^1.15.0",
     "query-string": "^6.8.2",
@@ -34,6 +36,11 @@
     ]
   },
   "devDependencies": {
-    "eslint": "^6.1.0"
+    "eslint": "^6.3.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0"
   }
 }

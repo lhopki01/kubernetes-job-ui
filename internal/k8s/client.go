@@ -60,10 +60,7 @@ func NewClient() *kubernetes.Clientset {
 			filepath.Join(home, ".kube", "config"),
 			"(optional) absolute path to the kubeconfig file",
 		)
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
-	flag.Parse()
 
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
@@ -107,7 +104,7 @@ func (c *Collection) UpdateCollection() {
 		}
 
 		if val, ok := cj.Annotations["kubernetes-job-runner.io/config"]; ok {
-			config, err := unmarshalJson(val)
+			config, err := unmarshalJSON(val)
 			if err != nil {
 				config.Errors = append(config.Errors, err.Error())
 			}
@@ -135,22 +132,37 @@ func (c *Collection) UpdateCollection() {
 			}
 		}
 		// Sort to make it easier to display options grouped by container on the frontend
-		sort.Sort(ByContainerIndex(cronJob.Config.Options))
-		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
+		if cronJob.Config.Options != nil {
+			sort.Sort(ByContainerIndex(cronJob.Config.Options))
+			cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
+		}
 	}
 	c.Lock()
 	c.cronJobs = cronJobs
 	c.Unlock()
 }
 
-func unmarshalJson(configString string) (config Config, err error) {
+func unmarshalJSON(configString string) (config Config, err error) {
 	err = json.Unmarshal([]byte(configString), &config)
 	if jsonError, ok := err.(*json.SyntaxError); ok {
 		line, character, _ := lineAndCharacter(configString, int(jsonError.Offset))
-		return config, fmt.Errorf("Cannot parse JSON schema due to a syntax error at line %d, character %d: %v\n", line, character, jsonError.Error())
+		return config, fmt.Errorf(
+			"cannot parse JSON schema due to a syntax error at line %d, character %d: %v",
+			line,
+			character,
+			jsonError.Error(),
+		)
 	} else if jsonError, ok := err.(*json.UnmarshalTypeError); ok {
 		line, character, _ := lineAndCharacter(configString, int(jsonError.Offset))
-		return config, fmt.Errorf("The JSON type '%v' cannot be converted into the Go '%v' type on struct '%s', field '%v'. See input file line %d, character %d\n", jsonError.Value, jsonError.Type.Name(), jsonError.Struct, jsonError.Field, line, character)
+		return config, fmt.Errorf(
+			"the JSON type '%v' cannot be converted into the type '%v' in struct '%s', field '%v' at line %d, character %d",
+			jsonError.Value,
+			jsonError.Type.Name(),
+			jsonError.Struct,
+			jsonError.Field,
+			line,
+			character,
+		)
 	} else if err != nil {
 		return config, err
 	}
@@ -164,7 +176,15 @@ func validateConfig(config Config) (errors []string) {
 		case "list":
 			if option.Values == nil || len(option.Values) == 0 {
 				errors = append(errors, fmt.Sprintf(
-					"'%s' in container '%s' does not have any values configured but is type 'list'",
+					"'%s' in container '%s' is type 'list' but does not have any values configured",
+					option.EnvVar,
+					option.Container,
+				))
+			}
+		case "bool":
+			if option.Values == nil || len(option.Values) != 2 {
+				errors = append(errors, fmt.Sprintf(
+					"'%s' in container '%s' is type 'bool' but does not have two values configured",
 					option.EnvVar,
 					option.Container,
 				))
@@ -172,7 +192,7 @@ func validateConfig(config Config) (errors []string) {
 		case "regex":
 			if option.Regex == "" {
 				errors = append(errors, fmt.Sprintf(
-					"'%s in container '%s' of type 'regex' does not have required field 'regex' set",
+					"'%s in container '%s' is type 'regex' but does not have required field 'regex' set",
 					option.EnvVar,
 					option.Container,
 				))
@@ -197,7 +217,7 @@ func lineAndCharacter(input string, offset int) (line int, character int, err er
 	lf := rune(0x0A)
 
 	if offset > len(input) || offset < 0 {
-		return 0, 0, fmt.Errorf("couldn't find offset %d within the input.", offset)
+		return 0, 0, fmt.Errorf("couldn't find offset %d within the input", offset)
 	}
 
 	// Humans tend to count from 1.
@@ -231,7 +251,6 @@ func orderedOwnedJobs(js []batchv1.Job, cronJobName string, cronJobNamespace str
 					job.Manual = true
 				}
 				if j.Status.Succeeded > 0 {
-					job.Passed = true
 					job.Status = "succeeded"
 				} else if j.Status.Active > 0 {
 					job.Status = "active"
@@ -243,14 +262,6 @@ func orderedOwnedJobs(js []batchv1.Job, cronJobName string, cronJobNamespace str
 		}
 	}
 	return jobs
-}
-
-func getImageTag(image string) string {
-	s := strings.Split(image, ":")
-	if len(s) == 2 {
-		return s[1]
-	}
-	return "latest"
 }
 
 func (c *Collection) GetCronJob(namespace, cronJobName string) CronJob {
@@ -277,7 +288,7 @@ func (c *Collection) GetJob(namespace, cronJobName, jobName string) Job {
 }
 
 func insertJobIntoSliceByCreationTime(js []Job, job Job) []Job {
-	var jobs []Job
+	jobs := make([]Job, 0)
 	for i, j := range js {
 		if j.CreationTime.Before(&job.CreationTime) {
 			return append(append(jobs, job), js[i:]...)
@@ -289,7 +300,7 @@ func insertJobIntoSliceByCreationTime(js []Job, job Job) []Job {
 }
 
 func insertCronJobIntoSliceByCreationTime(cjs []CronJob, cronJob CronJob) []CronJob {
-	var cronJobs []CronJob
+	cronJobs := make([]CronJob, 0)
 	for i, cj := range cjs {
 		if cj.CreationTime.Before(&cronJob.CreationTime) {
 			cronJobs = append(append(cronJobs, cronJob), cjs[i:]...)
@@ -356,12 +367,8 @@ func GetPod(clientset *kubernetes.Clientset, job string) (pods []Pod) {
 
 func (c *Collection) GetJobLogs(namespace, cronJobName, jobName string) Job {
 	if job, ok := c.monitoredJobs[jobName]; ok {
-		fmt.Println("Found")
-		job.Lock()
-		defer job.Unlock()
 		return job
 	}
-	fmt.Println("Missed")
 	c.UpdateCollection()
 	job := c.GetJob(namespace, cronJobName, jobName)
 	job.Pods = c.getLogs(namespace, jobName)
@@ -371,14 +378,13 @@ func (c *Collection) GetJobLogs(namespace, cronJobName, jobName string) Job {
 }
 
 func (c *Collection) getLogs(namespace, jobName string) []Pod {
-	fmt.Printf("checking logs for %s\n", jobName)
 	ps, err := c.Client.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", jobName),
 	})
 	if err != nil {
 		println(err)
 	}
-	var pods []Pod
+	pods := make([]Pod, 0)
 	for _, p := range ps.Items {
 		pod := Pod{
 			Name:         p.Name,
@@ -405,9 +411,9 @@ func (c *Collection) getLogs(namespace, jobName string) []Pod {
 
 				buf := new(bytes.Buffer)
 				//_, err = io.Copy(buf, podLogs)
-				buf.ReadFrom(podLogs)
+				_, err = buf.ReadFrom(podLogs)
 				if err != nil {
-					fmt.Printf("failed to copy logs with err: %v\n", err)
+					fmt.Printf("failed to read logs with erri: %v\n", err)
 				}
 				//str := strings.ReplaceAll(buf.String(), "\n", "<br>")
 				str := buf.String()
@@ -436,9 +442,6 @@ func (c *Collection) monitorJobLogs(namespace, cronJobName, jobName string) {
 		getLogs = status == "active"
 		c.monitoredJobs[jobName] = job
 	}
-
-	fmt.Printf("finished checking logs for %s\n", jobName)
-	return
 }
 
 func podStatus(phase corev1.PodPhase) (status string) {

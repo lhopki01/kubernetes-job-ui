@@ -8,14 +8,19 @@ test-cover:
 	go tool cover -html=coverage.out
 	rm coverage.out
 
-lint:
+lint: lint-go lint-javascript
+
+lint-go:
 	golangci-lint run
 
-release:
+lint-javascript:
+	cd website && ./node_modules/.bin/eslint src/**/**.jsx
+
+build-binaryfs:
+	cd website && rm -rf build && npm run build
+	go-bindata -pkg site -o internal/site/bindata.go -prefix "website/build" website/build/...
+
+release: build-binaryfs
 	git tag -a $$VERSION
 	git push origin $$VERSION
 	goreleaser --rm-dist
-
-build:
-	go-bindata -o bindata/bindata.go -pkg bindata website/build/...
-	CGO_ENABLED=0 go build -ldflags "-X $(MODULE)/cmd.Version=$$VERSION"

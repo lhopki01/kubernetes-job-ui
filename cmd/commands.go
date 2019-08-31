@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/lhopki01/kubernetes-job-ui/internal/k8s"
@@ -29,7 +30,8 @@ func AddCommands() {
 	if err != nil {
 		log.Fatalf("Binding flags failed: %s", err)
 	}
-
+	replacer := strings.NewReplacer("-", "_")
+	viper.SetEnvKeyReplacer(replacer)
 	viper.AutomaticEnv()
 
 	if err := rootCmd.Execute(); err != nil {

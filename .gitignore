@@ -1,2 +1,3 @@
 dist/
 kubernetes-job-ui
+internal/site/bindata.go
