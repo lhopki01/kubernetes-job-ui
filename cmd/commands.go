@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/lhopki01/kubernetes-job-ui/internal/k8s"
@@ -14,28 +15,23 @@ import (
 
 func AddCommands() {
 	rootCmd := &cobra.Command{
-		Use:   "docker-chain-builder",
-		Short: "A tool to build docker images and all their dependencies",
-	}
-
-	serveCmd := &cobra.Command{
 		Use:   "serve [options]",
 		Short: "Start webserver",
 		Run: func(cmd *cobra.Command, args []string) {
-			runServeCommand()
+			runRootCommand()
 
 		},
 	}
 
-	rootCmd.AddCommand(serveCmd)
-
-	serveCmd.Flags().String("namespace", "", "namespace to find CronJobs in")
-	serveCmd.Flags().Bool("configured-only", false, "only show CronJobs with Configuration")
-	err := viper.BindPFlags(serveCmd.Flags())
+	rootCmd.Flags().String("namespace", "", "namespace to find CronJobs in")
+	rootCmd.Flags().Bool("configured-only", false, "only show CronJobs with Configuration")
+	rootCmd.Flags().String("dev-server", "", "url of the react dev server to use when developing the react elements")
+	err := viper.BindPFlags(rootCmd.Flags())
 	if err != nil {
 		log.Fatalf("Binding flags failed: %s", err)
 	}
-
+	replacer := strings.NewReplacer("-", "_")
+	viper.SetEnvKeyReplacer(replacer)
 	viper.AutomaticEnv()
 
 	if err := rootCmd.Execute(); err != nil {
@@ -44,7 +40,7 @@ func AddCommands() {
 	}
 }
 
-func runServeCommand() {
+func runRootCommand() {
 	collection := k8s.NewCollection()
 
 	go func(c *k8s.Collection) {

@@ -1,4 +1,4 @@
-MODULE := github.com/lhopki01/git-mass-sync
+MODULE := github.com/lhopki01/kubernetes-job-ui
 
 test:
 	go test -race ./...
@@ -8,13 +8,19 @@ test-cover:
 	go tool cover -html=coverage.out
 	rm coverage.out
 
-lint:
+lint: lint-go lint-javascript
+
+lint-go:
 	golangci-lint run
 
-release:
+lint-javascript:
+	cd website && ./node_modules/.bin/eslint src/**/**.jsx
+
+build-binaryfs:
+	cd website && rm -rf build && npm run build
+	go-bindata -pkg site -o internal/site/bindata.go -prefix "website/build" website/build/...
+
+release: build-binaryfs
 	git tag -a $$VERSION
 	git push origin $$VERSION
 	goreleaser --rm-dist
-
-build:
-	CGO_ENABLED=0 go build -ldflags "-X $(MODULE)/cmd.Version=$$VERSION"
