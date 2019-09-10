@@ -3,6 +3,10 @@ import { JobStatusIconLink } from '../JobStatusIcon';
 import { NavBar } from '../NavBar';
 
 class CronJobs extends React.Component {
+  componentDidMount() {
+    $('[data-toggle="tooltip"]').tooltip();
+  }
+
   render() {
     return (
       <React.Fragment>
