@@ -18,6 +18,7 @@ class CronJobsTable extends React.Component {
   render() {
     const rows = this.props.cronJobs.map((item, index) => {
       return (
+        <React.Fragment key={item.name+item.namespace}>
         <tr key={item.name+item.namespace}>
           <td><a href={"/namespaces/"+item.namespace+"/cronjobs/"+item.name}>{item.name}</a></td>
           <td>{item.namespace}</td>
@@ -26,6 +27,10 @@ class CronJobsTable extends React.Component {
           <td><ReturnPreviousJobs cronJob={item}></ReturnPreviousJobs></td>
           <td><RunButton cronJob={item}></RunButton></td>
         </tr>
+        <tr>
+          <td colSpan="6">{item.config.description}</td>
+        </tr>
+        </React.Fragment>
       )
     })
     return (
