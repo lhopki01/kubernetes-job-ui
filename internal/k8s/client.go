@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
@@ -104,9 +104,11 @@ func (c *Collection) UpdateCollection() {
 		}
 
 		if val, ok := cj.Annotations["kubernetes-job-runner.io/config"]; ok {
-			config, err := unmarshalJSON(val)
+			//config, err := unmarshalJSON(val)
+			var config = Config{}
+			err := yaml.Unmarshal([]byte(val), &config)
 			if err != nil {
-				config.Errors = append(config.Errors, err.Error())
+				config.Errors = append(config.Errors, strings.TrimPrefix(err.Error(), "yaml: "))
 			}
 			cronJob.Config = config
 			cronJob.Config.Errors = append(cronJob.Config.Errors, validateConfig(cronJob.Config)...)
@@ -136,42 +138,12 @@ func (c *Collection) UpdateCollection() {
 		// Sort to make it easier to display options grouped by container on the frontend
 		if cronJob.Config.Options != nil {
 			sort.Sort(ByContainerIndex(cronJob.Config.Options))
-		} else {
-			fmt.Printf("%s has no options in config\n", cronJob.Name)
 		}
 		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
 	}
 	c.Lock()
 	c.cronJobs = cronJobs
 	c.Unlock()
-}
-
-func unmarshalJSON(configString string) (config Config, err error) {
-	err = json.Unmarshal([]byte(configString), &config)
-	if jsonError, ok := err.(*json.SyntaxError); ok {
-		line, character, _ := lineAndCharacter(configString, int(jsonError.Offset))
-		return config, fmt.Errorf(
-			"cannot parse JSON schema due to a syntax error at line %d, character %d: %v",
-			line,
-			character,
-			jsonError.Error(),
-		)
-	} else if jsonError, ok := err.(*json.UnmarshalTypeError); ok {
-		line, character, _ := lineAndCharacter(configString, int(jsonError.Offset))
-		return config, fmt.Errorf(
-			"the JSON type '%v' cannot be converted into the type '%v' in struct '%s', field '%v' at line %d, character %d",
-			jsonError.Value,
-			jsonError.Type.Name(),
-			jsonError.Struct,
-			jsonError.Field,
-			line,
-			character,
-		)
-	} else if err != nil {
-		return config, err
-	}
-	return config, nil
-
 }
 
 func validateConfig(config Config) (errors []string) {
