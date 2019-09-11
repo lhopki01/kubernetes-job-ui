@@ -115,6 +115,8 @@ func (c *Collection) UpdateCollection() {
 				for j, option := range cronJob.Config.Options {
 					if option.Container == container.Name {
 						cronJob.Config.Options[j].containerIndex = i
+					} else {
+						cronJob.Config.Options[j].containerIndex = 0
 					}
 				}
 			}
@@ -134,8 +136,10 @@ func (c *Collection) UpdateCollection() {
 		// Sort to make it easier to display options grouped by container on the frontend
 		if cronJob.Config.Options != nil {
 			sort.Sort(ByContainerIndex(cronJob.Config.Options))
-			cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
+		} else {
+			fmt.Printf("%s has no options in config\n", cronJob.Name)
 		}
+		cronJobs = insertCronJobIntoSliceByCreationTime(cronJobs, cronJob)
 	}
 	c.Lock()
 	c.cronJobs = cronJobs
