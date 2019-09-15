@@ -90,8 +90,8 @@ metadata:
       }
 spec:
   schedule: "0,15,30,45 * * * *"
-  successfulJobsHistoryLimit: 5
-  failedJobsHistoryLimit: 5
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 10
   jobTemplate:
     spec:
       parallelism: 1

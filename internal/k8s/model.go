@@ -48,11 +48,11 @@ type Collection struct {
 }
 
 type Config struct {
-	Description string   `json:"description"`
-	Options     []Option `json:"options"`
-	Error       string   `json:"error"`
-	Errors      []string `json:"errors"`
-	Raw         string   `json:"raw"`
+	Description string   `json:"description" yaml:"description"`
+	Options     []Option `json:"options" yaml:"options"`
+	Error       string   `json:"error" yaml:"error"`
+	Errors      []string `json:"errors" yaml:"errors"`
+	Raw         string   `json:"raw" yaml:"raw"`
 }
 
 const (
@@ -61,13 +61,13 @@ const (
 )
 
 type Option struct {
-	EnvVar         string   `json:"envVar"`
-	Type           string   `json:"type"`
-	Values         []string `json:"values"`
-	Regex          string   `json:"regex"`
-	Default        string   `json:"default"`
-	Description    string   `json:"description"`
-	Container      string   `json:"container"`
+	EnvVar         string   `json:"envVar" yaml:"envVar"`
+	Type           string   `json:"type" yaml:"type"`
+	Values         []string `json:"values" yaml:"values"`
+	Regex          string   `json:"regex" yaml:"regex"`
+	Default        string   `json:"default" yaml:"default"`
+	Description    string   `json:"description" yaml:"description"`
+	Container      string   `json:"container" yaml:"container"`
 	containerIndex int
 }
 

@@ -3,14 +3,57 @@ import { JobStatusIconLink } from '../JobStatusIcon';
 import { NavBar } from '../NavBar';
 
 class CronJob extends React.Component {
+  constructor(props) {
+    super(props);
+    props.cronJobs.forEach(item => {
+      if (item.name === props.match.params.cronJobName && item.namespace === props.match.params.namespace) {
+        this.state = {
+          cronJob: item
+        }
+      }
+    })
+  }
+
   render() {
     return (
       <React.Fragment>
         <NavBar {...this.props} />
+        <CronJobInformationPanel { ...this.state.cronJob } />
         <CronJobTable {...this.props}></CronJobTable>
       </React.Fragment>
     );
   }
+}
+
+function CronJobInformationPanel(props) {
+  console.log(props)
+  return (
+    <div className="container-fluid">
+      <div className="alert alert-secondary">
+        <div className="row">
+          <div className="col-11">
+            <h4>{props.name}</h4>
+            <h6>{props.config.description}</h6>
+            <h6>Namespace: {props.namespace}</h6>
+            <h6>Schedule: {props.schedule}</h6>
+          </div>
+          <div className="col align-middle">
+            <RunButton cronJob={props} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RunButton(props) {
+  return(
+    <a href={"/createjob?namespace="+props.cronJob.namespace+"&cronjob="+props.cronJob.name}>
+      <svg id="i-play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="25" height="25" fill="none" stroke="currentcolor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="text-centre">
+        <path d="M10 2 L10 30 24 16 Z" />
+      </svg>
+    </a>
+  )
 }
 
 function CronJobTable(props) {

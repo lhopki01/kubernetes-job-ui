@@ -56,8 +56,8 @@ class Job extends React.Component {
       return (
         <React.Fragment>
           <NavBar {...this.props} />
-          <div id="job">
-           Loading...
+          <div id="job" className="container-fluid">
+            <pre>Loading...</pre>
           </div>
         </React.Fragment>
       )
@@ -77,7 +77,7 @@ class Job extends React.Component {
 function JobInformationPanel(props) {
   return (
     <div className="alert alert-secondary">
-      <h6>Job: {props.job.name} <JobStatusIcon status={props.job.status} /></h6>
+      <h4>{props.job.name} <JobStatusIcon status={props.job.status} /></h4>
       <h6>Namespace: {props.job.namespace}</h6>
       <h6>Creation Time: {props.job.creationTime}</h6>
     </div>
