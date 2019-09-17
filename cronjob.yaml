@@ -35,7 +35,7 @@ metadata:
         "description": "A job to deploy the current k8s-manifests configuration of the specified helm chart",
         "options": [
           {
-            "envvar": "LIST",
+            "envVar": "LIST",
             "type": "list",
             "values": [
               "FOO",
@@ -47,21 +47,21 @@ metadata:
             "container": "hello"
           },
           {
-            "envvar": "INT",
+            "envVar": "INT",
             "default": "1",
             "type": "int",
             "descriptions": "int to deploy",
             "container": "goodbye"
           },
           {
-            "envvar": "FLOAT",
+            "envVar": "FLOAT",
             "default": "1.1",
             "type": "float",
             "descriptions": "float to deploy",
             "container": "goodbye"
           },
           {
-            "envvar": "REGEX",
+            "envVar": "REGEX",
             "default": "",
             "type": "regex",
             "regex": "^int-.*",
@@ -69,14 +69,14 @@ metadata:
             "container": "goodbye"
           },
           {
-            "envvar": "TEXTAREA",
+            "envVar": "TEXTAREA",
             "default": "",
             "type": "textarea",
             "descriptions": "freeform text",
             "container": "goodbye"
           },
           {
-            "envvar": "BOOL",
+            "envVar": "BOOL",
             "type": "bool",
             "values": [
               "true",
