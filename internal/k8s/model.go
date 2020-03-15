@@ -48,11 +48,13 @@ type Collection struct {
 }
 
 type Config struct {
-	Description string   `json:"description" yaml:"description"`
-	Options     []Option `json:"options" yaml:"options"`
-	Error       string   `json:"error" yaml:"error"`
-	Errors      []string `json:"errors" yaml:"errors"`
-	Raw         string   `json:"raw" yaml:"raw"`
+	ShortDescription string   `json:"shortDescription" yaml:"shortDescription"`
+	LongDescription  string   `json:"longDescription" yaml:"longDescription"`
+	Folder           string   `json:"folder" yaml:"folder"`
+	Options          []Option `json:"options" yaml:"options"`
+	Error            string   `json:"error" yaml:"error"`
+	Errors           []string `json:"errors" yaml:"errors"`
+	Raw              string   `json:"raw" yaml:"raw"`
 }
 
 const (

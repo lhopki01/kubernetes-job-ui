@@ -122,7 +122,9 @@ func (c *Collection) UpdateCollection() {
 					}
 				}
 			}
-		} else if !viper.GetBool("configured-only") {
+		} else if viper.GetBool("configured-only") {
+			continue
+		} else {
 			for i, container := range cj.Spec.JobTemplate.Spec.Template.Spec.Containers {
 				for _, v := range container.Env {
 					cronJob.Config.Options = append(cronJob.Config.Options, Option{
