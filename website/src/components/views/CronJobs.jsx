@@ -32,10 +32,113 @@ class CronJobs extends React.Component {
     return (
       <React.Fragment>
         <NavBar {...this.props} />
-        <CronJobsTable cronJobs={ this.props.cronJobs } onClick={ (i) => this.handleRowClick(i) } expandedRows={ this.state.expandedRows }></CronJobsTable>
+        <Folders
+          cronJobs={ this.props.cronJobs }
+          folderClick={ (i) => this.handleFolderClick(i) }
+          rowClick={ (i) => this.handleRowClick(i) }
+          expandedFolders={ this.state.expandedFolders }
+          expandedRows={ this.state.expandedRows }>
+        </Folders>
+      {/* <CronJobsTable cronJobs={ this.props.cronJobs } onClick={ (i) => this.handleRowClick(i) } expandedRows={ this.state.expandedRows }></CronJobsTable> */}
       </React.Fragment>
     )
   }
+}
+
+function Folders(props) {
+  console.log(props.expandedFolders)
+  console.log(props.expandedRows)
+  if (props.cronJobs === null) {
+    return null
+  }
+  let folders = props.cronJobs.map(item => {
+    return item.config.folder
+  })
+  folders = [...new Set(folders)].sort()
+  const folderRows = folders.map(folder => {
+    if (folder === "") {
+      return null
+    }
+    const clickCallback = () => props.folderClick(folder);
+    var cronJobs = props.expandedFolders.includes(folder) ?
+                   <FolderCronJobsTable folder={folder} cronJobs={props.cronJobs} rowClick={props.rowClick} expandedRows={props.expandedRows}/> :
+                   null;
+    var symbol = "  +"
+    if (props.expandedFolders.includes(folder)) {
+      var symbol = "  -"
+    }
+    return (
+      <React.Fragment key={folder}>
+      <tr onClick={ clickCallback } key={folder}>
+        <td><h4>{folder}{symbol}</h4></td>
+      </tr>
+      { cronJobs }
+      </React.Fragment>
+    )
+  })
+
+  return(
+    <div className="container-fluid">
+      <table className="table table-hover">
+        <tbody>
+          {folderRows}
+          <FolderCronJobsTable folder="" cronJobs={props.cronJobs} rowClick={props.rowClick} expandedRows={props.expandedRows}/>
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function FolderCronJobsTable(props) {
+  //console.log(props.folder)
+  //console.log(props.cronJobs)
+  console.log(props.expandedRows)
+  const cronJobs = props.cronJobs.map((item) => {
+    if (item.config.folder === props.folder) {
+      const id = item.name+item.namespace
+      const clickCallback = () => props.rowClick(id);
+      var cronJob = props.expandedRows.includes(id) ?
+                    <tr>
+                      <td colSpan="6">
+                        <CronJobInformationPanel { ...item }/>
+                      </td>
+                    </tr> :
+                    null;
+      return (
+        <React.Fragment key={item.name+item.namespace}>
+        <tr onClick={clickCallback} key={item.name+item.namespace}>
+          <td>{item.name}</td>
+          <td>{ item.config.shortDescription }</td>
+          <td className="text-center"><ReturnFirstJob cronJob={item}></ReturnFirstJob></td>
+          <td><ReturnPreviousJobs cronJob={item}></ReturnPreviousJobs></td>
+          <td className="text-center"><RunButton cronJob={item}></RunButton></td>
+        </tr>
+        {cronJob}
+        </React.Fragment>
+      )
+    }
+    return null
+  console.log(cronJobs)
+  })
+  return (
+    <div className="container-fluid">
+          <div className="alert alert-light">
+      <table className="table">
+        <tbody>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th className="text-center">Last Run</th>
+            <th>Previous Runs</th>
+            <th className="text-center">Links</th>
+          </tr>
+          {cronJobs}
+        </tbody>
+      </table>
+    </div>
+    </div>
+  )
+
 }
 
 class CronJobsTable extends React.Component {

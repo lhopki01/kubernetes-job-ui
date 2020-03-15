@@ -36,6 +36,9 @@ spec:
   successfulJobsHistoryLimit: 5
   jobTemplate:
     spec:
+      parallelism: 1
+      completions: 1
+      backoffLimit: 0
       template:
         spec:
           containers:
@@ -59,6 +62,90 @@ metadata:
     kubernetes-job-runner.io/config: |
       shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
       folder: folder2
+      longDescription: |
+        Choose a helm chart and specify a version from github to deploy.
+        Versions are validated at runtime to ensure they exist.
+        Third line to make this longer and longer.
+        Fourth line to ensure it's longer.
+      options:
+        - envVar: LIST
+          type: list
+          values:
+            - FOO
+            - BAR
+            - foobar
+          default: foobar
+          description: An option to select what type of foo
+          container: hello
+        - envVar: INT
+          default: '1'
+          type: int
+          description: int to deploy
+          container: goodbye
+        - envVar: FLOAT
+          default: '1.1'
+          type: float
+          descriptions: float to deploy
+          container: goodbye
+        - envVar: REGEX
+          default: ''
+          type: regex
+          regex: "^int-.*"
+          description: regex to deploy
+          container: goodbye
+        - envVar: TEXTAREA
+          default: ''
+          type: textarea
+          description: freeform text
+          container: goodbye
+        - envVar: BOOL
+          type: bool
+          values:
+            - 'true'
+            - 'false'
+          default: 'true'
+          description: Should we do something?
+          container: hello
+spec:
+  schedule: "0,15,30,45 * * * *"
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      parallelism: 1
+      completions: 1
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "container hello $FOOBAR"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: FOOBAR
+                value: "FOOBAR not set"
+          - name: goodbye
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "container goodbye $BARFOO"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: BARFOO
+                value: "BARFOO not set"
+          restartPolicy: Never
+---
+# cronjob.yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: three
+  annotations:
+    kubernetes-job-runner.io/config: |
+      shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
       longDescription: |
         Choose a helm chart and specify a version from github to deploy.
         Versions are validated at runtime to ensure they exist.
@@ -117,7 +204,188 @@ spec:
     spec:
       parallelism: 1
       completions: 1
-      backoffLimit: 1
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "container hello $FOOBAR"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: FOOBAR
+                value: "FOOBAR not set"
+          - name: goodbye
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "container goodbye $BARFOO"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: BARFOO
+                value: "BARFOO not set"
+          restartPolicy: Never
+---
+# cronjob.yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: four
+  annotations:
+    kubernetes-job-runner.io/config: |
+      shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
+      longDescription: |
+        Choose a helm chart and specify a version from github to deploy.
+        Versions are validated at runtime to ensure they exist.
+        Third line to make this longer and longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+      options:
+        - envVar: LIST
+          type: list
+          values:
+            - FOO
+            - BAR
+            - foobar
+          default: foobar
+          description: An option to select what type of foo
+          container: hello
+        - envVar: INT
+          default: '1'
+          type: int
+          description: int to deploy
+          container: goodbye
+        - envVar: FLOAT
+          default: '1.1'
+          type: float
+          descriptions: float to deploy
+          container: goodbye
+        - envVar: REGEX
+          default: ''
+          type: regex
+          regex: "^int-.*"
+          description: regex to deploy
+          container: goodbye
+        - envVar: TEXTAREA
+          default: ''
+          type: textarea
+          description: freeform text
+          container: goodbye
+        - envVar: BOOL
+          type: bool
+          values:
+            - 'true'
+            - 'false'
+          default: 'true'
+          description: Should we do something?
+          container: hello
+spec:
+  schedule: "0,15,30,45 * * * *"
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      parallelism: 1
+      completions: 1
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "container hello $FOOBAR"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: FOOBAR
+                value: "FOOBAR not set"
+          - name: goodbye
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo "container goodbye $BARFOO"; if [ $RANDOM -gt 25766 ]; then echo "failing"; exit 1; fi
+            env:
+              - name: BARFOO
+                value: "BARFOO not set"
+          restartPolicy: Never
+---
+# cronjob.yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: five
+  annotations:
+    kubernetes-job-runner.io/config: |
+      folder: folder1
+      shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
+      longDescription: |
+        Choose a helm chart and specify a version from github to deploy.
+        Versions are validated at runtime to ensure they exist.
+        Third line to make this longer and longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+        Fourth line to ensure it's longer.
+      options:
+        - envVar: LIST
+          type: list
+          values:
+            - FOO
+            - BAR
+            - foobar
+          default: foobar
+          description: An option to select what type of foo
+          container: hello
+        - envVar: INT
+          default: '1'
+          type: int
+          description: int to deploy
+          container: goodbye
+        - envVar: FLOAT
+          default: '1.1'
+          type: float
+          descriptions: float to deploy
+          container: goodbye
+        - envVar: REGEX
+          default: ''
+          type: regex
+          regex: "^int-.*"
+          description: regex to deploy
+          container: goodbye
+        - envVar: TEXTAREA
+          default: ''
+          type: textarea
+          description: freeform text
+          container: goodbye
+        - envVar: BOOL
+          type: bool
+          values:
+            - 'true'
+            - 'false'
+          default: 'true'
+          description: Should we do something?
+          container: hello
+spec:
+  schedule: "0,15,30,45 * * * *"
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      parallelism: 1
+      completions: 1
+      backoffLimit: 0
       template:
         spec:
           containers:
