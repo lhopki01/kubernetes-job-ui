@@ -3,22 +3,11 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: one
+  name: one-much-long-name-to-test
   annotations:
     kubernetes-job-runner.io/config: |
-      folder: folder1
+      folder: infrastructure
       shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
-      longDescription: |
-        Choose a helm chart and specify a version from github to deploy.
-        Versions are validated at runtime to ensure they exist.
-        Third line to make this longer and longer.
-        Fourth line to ensure it's longer.
-        Fourth line to ensure it's longer.
-        Fourth line to ensure it's longer.
-        Fourth line to ensure it's longer.
-        Fourth line to ensure it's longer.
-        Fourth line to ensure it's longer.
-        Fourth line to ensure it's longer.
       options:
         - envVar: LIST
           type: list
@@ -61,7 +50,7 @@ metadata:
   annotations:
     kubernetes-job-runner.io/config: |
       shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
-      folder: folder2
+      folder: loadtesting
       longDescription: |
         Choose a helm chart and specify a version from github to deploy.
         Versions are validated at runtime to ensure they exist.
@@ -325,7 +314,7 @@ metadata:
   name: five
   annotations:
     kubernetes-job-runner.io/config: |
-      folder: folder1
+      folder: infrastructure
       shortDescription: Deploy the current k8s-manifests configuration of the specified helm chart
       longDescription: |
         Choose a helm chart and specify a version from github to deploy.

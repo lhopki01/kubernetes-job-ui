@@ -9,11 +9,10 @@ class CronJob extends React.Component {
       if (item.name === props.match.params.cronJobName && item.namespace === props.match.params.namespace) {
         this.state = {
           cronJob: item
-        }
+       }
       }
     })
   }
-
   render() {
     return (
       <React.Fragment>

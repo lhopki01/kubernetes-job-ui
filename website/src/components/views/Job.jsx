@@ -8,6 +8,7 @@ class Job extends React.Component {
     this.state = {
       isLoading: true,
       shouldPoll: true,
+      description: "foo"
     }
   }
 
@@ -17,8 +18,8 @@ class Job extends React.Component {
     }
     return false
   }
-  isLoading(jsonData) {
-    if (jsonData.pods !== null) {
+  isLoading(jobJsonData, ) {
+    if (jobJsonData.pods !== null) {
       return false
     }
     return true
@@ -28,16 +29,19 @@ class Job extends React.Component {
     if (this.state.shouldPoll) {
       try {
         const {namespace, cronJobName, jobName} = this.props.match.params
-        const url = `/api/v1/namespaces/${namespace}/cronjobs/${cronJobName}/jobs/${jobName}`
-        const response = await fetch(url)
-        const jsonData = await response.json()
+        const jobUrl = `/api/v1/namespaces/${namespace}/cronjobs/${cronJobName}/jobs/${jobName}`
+        const jobResponse = await fetch(jobUrl)
+        const jobJsonData = await jobResponse.json()
+        const cronJobUrl = `/api/v1/namespaces/${namespace}/cronjobs/${cronJobName}`
+        const cronJobResponse = await fetch(cronJobUrl)
+        const cronJobJsonData = await cronJobResponse.json()
         this.setState({
-          job: jsonData,
-          shouldPoll: this.shouldPoll(jsonData.status),
-          isLoading: this.isLoading(jsonData)
+          job: jobJsonData,
+          description: cronJobJsonData.config.longDescription !== "" ? cronJobJsonData.config.longDescription : cronJobJsonData.config.shortDescription,
+          shouldPoll: this.shouldPoll(jobJsonData.status),
+          isLoading: this.isLoading(jobJsonData)
         })
         return
-
       } catch(error) {
         console.error(error)
       }
@@ -50,6 +54,7 @@ class Job extends React.Component {
     this.getLogs()
     this.interval = setInterval(() => this.getLogs(), 2000);
   }
+
 
   render() {
     if (this.state.isLoading) {
@@ -66,7 +71,7 @@ class Job extends React.Component {
       <React.Fragment>
         <NavBar {...this.props} />
         <div className="container-fluid">
-          <JobInformationPanel job={this.state.job} />
+          <JobInformationPanel job={this.state.job} description={this.state.description}/>
           <PodTabs job={this.state.job} />
         </div>
       </React.Fragment>
@@ -77,9 +82,16 @@ class Job extends React.Component {
 function JobInformationPanel(props) {
   return (
     <div className="alert alert-secondary">
-      <h4>{props.job.name} <JobStatusIcon status={props.job.status} /></h4>
-      <h6>Namespace: {props.job.namespace}</h6>
-      <h6>Creation Time: {props.job.creationTime}</h6>
+            <div className="row">
+              <div className="col-3">
+                <h4>{props.job.name} <JobStatusIcon status={props.job.status} /></h4>
+                <h6>Namespace: {props.job.namespace}</h6>
+                <h6>Creation Time: {props.job.creationTime}</h6>
+            </div>
+            <div className="col-8">
+              <p>{ props.description }</p>
+            </div>
+          </div>
     </div>
   )
 }

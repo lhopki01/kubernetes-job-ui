@@ -148,37 +148,19 @@ function Options(props) {
 }
 
 function Option(props) {
-  const option = (
+  return (
     <div className="form-group row">
       <label className="col text-right col-form-label">
         {props.option.envVar}
       </label>
       <div className="col">
         <FormInput option={props.option} defaultValue={props.formValues[props.index]} name={props.index} />
+        <span style={{color: "red"}}>{props.errors[props.index]}</span>
       </div>
       <div className="col col-form-label">
         <span>{props.option.description}</span>
       </div>
     </div>
-  )
-  if (props.index in props.errors) {
-    return (
-      <div>
-      {option}
-      <div className="form-group row">
-        <label className="col text-right col-form-label">
-        </label>
-        <div className="col">
-          <span style={{color: "red"}}>{props.errors[props.index]}</span>
-        </div>
-        <div className="col col-form-label">
-        </div>
-      </div>
-      </div>
-    )
-  }
-  return (
-    option
   )
 }
 

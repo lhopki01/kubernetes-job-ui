@@ -4,7 +4,7 @@ function NavBar(props) {
   return(
     <div className="container-fluid">
       <nav className="navbar navbar-expand-lg navbar-light bg-light">
-        <a className="navbar-brand" href="/">Platform</a>
+        <a className="navbar-brand" href="/">Kubernetes Job UI</a>
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="navbar-nav">
             <li className="navbar-item">

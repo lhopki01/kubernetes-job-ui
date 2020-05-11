@@ -67,6 +67,7 @@ type Option struct {
 	Type           string   `json:"type" yaml:"type"`
 	Values         []string `json:"values" yaml:"values"`
 	Regex          string   `json:"regex" yaml:"regex"`
+	Required       bool     `json:"required" yaml:"required"`
 	Default        string   `json:"default" yaml:"default"`
 	Description    string   `json:"description" yaml:"description"`
 	Container      string   `json:"container" yaml:"container"`

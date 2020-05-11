@@ -33,6 +33,11 @@ func Serve(collection *k8s.Collection) {
 	r.GET("api/v1/cronjobs", func(c *gin.Context) {
 		c.JSON(http.StatusOK, collection.GetCronJobs())
 	})
+	r.GET("api/v1/namespaces/:namespace/cronjobs/:cronjobname", func(c *gin.Context) {
+		namespace := c.Param("namespace")
+		cronJobName := c.Param("cronjobname")
+		c.JSON(http.StatusOK, collection.GetCronJob(namespace, cronJobName))
+	})
 	r.GET("api/v1/namespaces/:namespace/cronjobs/:cronjobname/jobs/:jobname", func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		jobName := c.Param("jobname")

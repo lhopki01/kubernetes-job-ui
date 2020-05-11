@@ -462,16 +462,20 @@ func (c *Collection) ValidateEnvVars(namespace, cronJobName string, envVars []Re
 func validateEnvVar(option Option, envVar ResponseOption) error {
 	switch option.Type {
 	case "list":
+		matched := false
 		for _, v := range option.Values {
 			if v == envVar.Value {
-				return nil
+				matched = true
+				break
 			}
 		}
-		return fmt.Errorf(
-			"'%s' not one of ['%s']",
-			envVar.Value,
-			strings.Join(option.Values, "', '"),
-		)
+		if !matched {
+			return fmt.Errorf(
+				"'%s' not one of ['%s']",
+				envVar.Value,
+				strings.Join(option.Values, "', '"),
+			)
+		}
 	case "bool":
 		_, err := strconv.ParseBool(envVar.Value)
 		if err != nil {
@@ -480,7 +484,6 @@ func validateEnvVar(option Option, envVar ResponseOption) error {
 				envVar.Value,
 			)
 		}
-		return nil
 	case "int":
 		_, err := strconv.Atoi(envVar.Value)
 		if err != nil {
@@ -489,7 +492,6 @@ func validateEnvVar(option Option, envVar ResponseOption) error {
 				envVar.Value,
 			)
 		}
-		return nil
 	case "float":
 		_, err := strconv.ParseFloat(envVar.Value, 64)
 		if err != nil {
@@ -498,7 +500,6 @@ func validateEnvVar(option Option, envVar ResponseOption) error {
 				envVar.Value,
 			)
 		}
-		return nil
 	case "regex":
 		r, err := regexp.Compile(option.Regex)
 		if err != nil {
@@ -514,7 +515,11 @@ func validateEnvVar(option Option, envVar ResponseOption) error {
 		}
 	case "textarea":
 	case "string":
-		return nil
+	}
+	if option.Required && envVar.Value == "" {
+		return fmt.Errorf(
+			"required value",
+		)
 	}
 	return nil
 }
