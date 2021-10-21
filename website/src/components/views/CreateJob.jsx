@@ -30,7 +30,7 @@ class CreateJob extends React.Component {
 
   onSubmitWithProps = async (event, props) => {
     event.preventDefault();
-    const options = props.cronJob.config.options
+    const options = props.cronJob.config.options ?? []
     const jobRequest = options.map((option, index) => {
       return {
         "envVar": option.envVar,
@@ -124,7 +124,7 @@ function JobForm(props) {
 
 function Options(props) {
   let containerName = ""
-  return ( props.cronJob.config.options.map((option, index) => {
+  return ((props.cronJob.config.options ?? []).map((option, index) => {
     if (containerName !== option.container) {
       containerName = option.container
       return (
